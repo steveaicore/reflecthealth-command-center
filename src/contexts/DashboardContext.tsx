@@ -133,6 +133,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useDashboard() {
   const ctx = useContext(DashboardContext);
   if (!ctx) throw new Error("useDashboard must be used within DashboardProvider");
