@@ -1,6 +1,8 @@
 import { useDashboard, type DashboardTab } from "@/contexts/DashboardContext";
-import { Activity, SlidersHorizontal, Shield, Eye, RefreshCw, Phone, FileText, Globe, TrendingUp } from "lucide-react";
+import { useSimulation } from "@/contexts/SimulationContext";
+import { SlidersHorizontal, Shield, Eye, RefreshCw, Phone, FileText, Globe, TrendingUp, Volume2, VolumeX } from "lucide-react";
 import { type VolumePreset } from "@/lib/roi-calculations";
+import { ScenarioSelector } from "./ScenarioSelector";
 
 const presetLabels: Record<VolumePreset, string> = {
   low: "Low",
@@ -26,25 +28,64 @@ function SyncIndicator() {
   );
 }
 
+function ImmersiveToggle() {
+  const { audioEnabled, setAudioEnabled } = useSimulation();
+  return (
+    <button
+      onClick={() => setAudioEnabled(!audioEnabled)}
+      className={`flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium rounded transition-all ${
+        audioEnabled
+          ? "reflect-gradient text-white"
+          : "bg-secondary text-muted-foreground hover:text-foreground"
+      }`}
+    >
+      {audioEnabled ? <Volume2 className="h-3 w-3" /> : <VolumeX className="h-3 w-3" />}
+      Immersive Demo
+    </button>
+  );
+}
+
 export function Header() {
   const { mode, setMode, preset, setPreset, setDrawerOpen, activeTab, setActiveTab } = useDashboard();
 
   return (
-    <header className="border-b border-border bg-card/80 backdrop-blur-sm">
+    <header className="border-b border-border bg-card/90 backdrop-blur-sm">
       {/* Top bar */}
       <div className="px-5 py-2.5 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Activity className="h-4 w-4 text-primary" />
-          <h1 className="text-sm font-semibold text-foreground tracking-tight">
-            Reflect AI <span className="text-primary">Ops</span>
-          </h1>
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 rounded reflect-gradient" />
+            <div>
+              <h1 className="text-sm font-semibold text-foreground tracking-tight">
+                Reflect AI <span className="reflect-gradient-text">Ops</span>
+              </h1>
+              <span className="text-[8px] text-muted-foreground leading-none">Command Center</span>
+            </div>
+          </div>
           <span className="hidden md:inline text-[10px] text-muted-foreground border-l border-border pl-3">
-            Command Center
+            Operational Intelligence for the Benefits Hub
           </span>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[9px] text-muted-foreground">Reflect Health</span>
+            <span className="text-[8px] text-muted-foreground/50">·</span>
+            <span className="text-[8px] text-muted-foreground/50">Powered by Penguin AI</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Controls bar */}
+      <div className="px-5 py-1.5 flex items-center justify-between border-t border-border/50 bg-secondary/30">
+        <div className="flex items-center gap-2">
           <SyncIndicator />
+        </div>
+
+        <div className="flex items-center gap-2">
+          <ImmersiveToggle />
+
+          <ScenarioSelector />
 
           {/* Volume Presets */}
           <div className="flex items-center bg-secondary rounded-md p-0.5 gap-0.5">
@@ -54,7 +95,7 @@ export function Header() {
                 onClick={() => setPreset(p)}
                 className={`px-2.5 py-1 text-[10px] font-medium rounded transition-all ${
                   preset === p
-                    ? "bg-primary text-primary-foreground"
+                    ? "reflect-gradient text-white"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -69,7 +110,7 @@ export function Header() {
               onClick={() => setMode("internal")}
               className={`flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium rounded transition-all ${
                 mode === "internal"
-                  ? "bg-primary text-primary-foreground"
+                  ? "reflect-gradient text-white"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -80,7 +121,7 @@ export function Header() {
               onClick={() => setMode("tpa-demo")}
               className={`flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium rounded transition-all ${
                 mode === "tpa-demo"
-                  ? "bg-primary text-primary-foreground"
+                  ? "reflect-gradient text-white"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
