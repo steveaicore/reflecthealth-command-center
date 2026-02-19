@@ -3,6 +3,7 @@ import { useSimulation } from "@/contexts/SimulationContext";
 import { SlidersHorizontal, Shield, Eye, RefreshCw, Phone, FileText, Globe, TrendingUp, Volume2, VolumeX } from "lucide-react";
 import { type VolumePreset } from "@/lib/roi-calculations";
 import { ScenarioSelector } from "./ScenarioSelector";
+import penguinLogo from "@/assets/penguin-ai-logo.png";
 
 const presetLabels: Record<VolumePreset, string> = {
   low: "Low",
@@ -53,8 +54,7 @@ export function Header() {
       {/* Top bar */}
       <div className="px-5 py-2.5 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded reflect-gradient" />
+        <div className="flex items-center gap-2">
             <div>
               <h1 className="text-sm font-semibold text-foreground tracking-tight">
                 Reflect AI <span className="reflect-gradient-text">Ops</span>
@@ -68,10 +68,8 @@ export function Header() {
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5">
-            <span className="text-[9px] text-muted-foreground">Reflect Health</span>
-            <span className="text-[8px] text-muted-foreground/50">·</span>
-            <span className="text-[8px] text-muted-foreground/50">Powered by Penguin AI</span>
+          <div className="flex items-center gap-2">
+            <img src={penguinLogo} alt="Penguin AI" className="h-4 opacity-40" />
           </div>
         </div>
       </div>
