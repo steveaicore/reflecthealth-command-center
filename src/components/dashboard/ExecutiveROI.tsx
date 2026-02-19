@@ -1,0 +1,129 @@
+import { useDashboard } from "@/contexts/DashboardContext";
+import { fmtCurrency, fmtDecimal } from "@/lib/format";
+import { MetricCard } from "./MetricCard";
+import { CountUpValue } from "./CountUpValue";
+import { Slider } from "@/components/ui/slider";
+import { DollarSign, TrendingUp, Clock, Users } from "lucide-react";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+
+export function ExecutiveROI() {
+  const { results, mode, platformParams, setPlatformParams } = useDashboard();
+  const { combined, callCenter, claims } = results;
+
+  // Generate 12-month cumulative savings data
+  const monthlySavings = combined.totalAnnualSavings / 12;
+  const monthlyData = Array.from({ length: 12 }, (_, i) => ({
+    month: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][i],
+    savings: Math.round(monthlySavings * (i + 1)),
+    cost: platformParams.annualPlatformCost,
+  }));
+
+  return (
+    <div className="space-y-4">
+      {/* Hero metrics with count-up */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="metric-card flex flex-col gap-1.5">
+          <div className="flex items-center justify-between">
+            <span className="metric-label">Total Annual Savings</span>
+            <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
+          </div>
+          <CountUpValue
+            value={combined.totalAnnualSavings}
+            formatter={fmtCurrency}
+            className="metric-value metric-positive"
+          />
+        </div>
+        <div className="metric-card flex flex-col gap-1.5">
+          <div className="flex items-center justify-between">
+            <span className="metric-label">ROI Multiple</span>
+            <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
+          </div>
+          <CountUpValue
+            value={combined.roi}
+            formatter={(n) => `${fmtDecimal(n)}x`}
+            className="metric-value metric-positive"
+          />
+        </div>
+        <MetricCard
+          label="Payback Period"
+          value={`${fmtDecimal(combined.paybackMonths)} mo`}
+          trend="positive"
+          icon={<Clock className="h-3.5 w-3.5" />}
+        />
+        <MetricCard
+          label="Total FTE Reduction"
+          value={fmtDecimal(callCenter.fteSaved + claims.fteSaved)}
+          sub={`Calls: ${fmtDecimal(callCenter.fteSaved)} · Claims: ${fmtDecimal(claims.fteSaved)}`}
+          trend="positive"
+          icon={<Users className="h-3.5 w-3.5" />}
+        />
+      </div>
+
+      {/* 12-month cumulative savings chart */}
+      <div className="module-panel">
+        <div className="module-header">
+          <span className="text-xs font-semibold text-foreground">12-Month Cumulative Savings</span>
+        </div>
+        <div className="p-4 h-[260px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={monthlyData}>
+              <defs>
+                <linearGradient id="savingsGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="hsl(185, 65%, 50%)" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="hsl(185, 65%, 50%)" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 20%, 15%)" />
+              <XAxis
+                dataKey="month"
+                tick={{ fill: "hsl(215, 15%, 50%)", fontSize: 10 }}
+                axisLine={{ stroke: "hsl(220, 20%, 15%)" }}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{ fill: "hsl(215, 15%, 50%)", fontSize: 10 }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(v) => `$${(v / 1000).toFixed(0)}K`}
+              />
+              <Tooltip
+                contentStyle={{
+                  background: "hsl(220, 30%, 10%)",
+                  border: "1px solid hsl(220, 20%, 15%)",
+                  borderRadius: 6,
+                  fontSize: 11,
+                }}
+                labelStyle={{ color: "hsl(210, 40%, 96%)" }}
+                formatter={(value: number) => [fmtCurrency(value), "Cumulative Savings"]}
+              />
+              <Area
+                type="monotone"
+                dataKey="savings"
+                stroke="hsl(185, 65%, 50%)"
+                strokeWidth={2}
+                fill="url(#savingsGrad)"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Platform cost slider (internal only) */}
+      {mode === "internal" && (
+        <div className="module-panel p-4 space-y-3">
+          <div className="flex justify-between text-xs">
+            <span className="text-muted-foreground">Annual Platform Cost</span>
+            <span className="font-mono text-foreground">${(platformParams.annualPlatformCost / 1000).toFixed(0)}K</span>
+          </div>
+          <Slider
+            value={[platformParams.annualPlatformCost]}
+            min={50000}
+            max={500000}
+            step={10000}
+            onValueChange={([v]) => setPlatformParams({ annualPlatformCost: v })}
+          />
+        </div>
+      )}
+    </div>
+  );
+}

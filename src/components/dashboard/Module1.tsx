@@ -1,6 +1,7 @@
 import { useDashboard } from "@/contexts/DashboardContext";
 import { fmtCurrency, fmtDecimal, fmtNumber, fmtPct } from "@/lib/format";
 import { MetricCard } from "./MetricCard";
+import { CallTicker, InsightCard } from "./LiveFeed";
 import { Phone, Users, Zap, TrendingDown } from "lucide-react";
 
 export function Module1() {
@@ -8,21 +9,10 @@ export function Module1() {
   const { callCenter } = results;
 
   return (
-    <div className="module-panel">
-      <div className="module-header">
-        <div className="flex items-center gap-2">
-          <Phone className="h-4 w-4 text-primary" />
-          <h2 className="text-sm font-semibold text-foreground">
-            Module 1: Member & Provider Contact Intelligence
-          </h2>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="status-dot" />
-          <span className="text-[10px] text-muted-foreground">Active</span>
-        </div>
-      </div>
+    <div className="space-y-4">
+      <CallTicker />
 
-      <div className="p-5 grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <MetricCard
           label="Monthly Calls"
           value={fmtNumber(callParams.monthlyCalls)}
@@ -59,16 +49,11 @@ export function Module1() {
         )}
       </div>
 
-      <div className="px-5 pb-4">
-        <div className="rounded-lg bg-secondary/50 p-3 text-xs text-muted-foreground leading-relaxed">
-          Provider-directed calls are filtered for eligibility, verified at{" "}
-          <span className="font-mono text-foreground">{fmtPct(callParams.accuracyPct)}</span> accuracy,
-          and processed through Reflect's AI engine at{" "}
-          <span className="font-mono text-foreground">{fmtPct(callParams.aiProcessSavingsPct)}</span>{" "}
-          automation yield. Handle time reduced from{" "}
-          <span className="font-mono text-foreground">{callParams.handleTimeMin} min</span> baseline.
-        </div>
-      </div>
+      <InsightCard>
+        AI deflection at <span className="font-mono text-foreground">{fmtPct(callParams.aiProcessSavingsPct)}</span> · 
+        Accuracy <span className="font-mono text-foreground">{fmtPct(callParams.accuracyPct)}</span> · 
+        Handle time <span className="font-mono text-foreground">{callParams.handleTimeMin}m</span> baseline
+      </InsightCard>
     </div>
   );
 }

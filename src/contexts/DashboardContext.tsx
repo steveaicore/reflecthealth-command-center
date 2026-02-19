@@ -10,6 +10,7 @@ import {
 } from "@/lib/roi-calculations";
 
 export type ViewMode = "internal" | "tpa-demo";
+export type DashboardTab = "contact" | "claims" | "network" | "roi";
 
 interface DashboardState {
   mode: ViewMode;
@@ -28,6 +29,9 @@ interface DashboardState {
   setDrawerOpen: (o: boolean) => void;
   competitiveIndexOpen: boolean;
   setCompetitiveIndexOpen: (o: boolean) => void;
+  activeTab: DashboardTab;
+  setActiveTab: (t: DashboardTab) => void;
+  isSyncing: boolean;
 }
 
 const DashboardContext = createContext<DashboardState | null>(null);
@@ -63,29 +67,37 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [competitiveIndexOpen, setCompetitiveIndexOpen] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(new Date());
+  const [activeTab, setActiveTab] = useState<DashboardTab>("contact");
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const triggerSync = useCallback(() => {
+    setIsSyncing(true);
+    setLastUpdated(new Date());
+    setTimeout(() => setIsSyncing(false), 1200);
+  }, []);
 
   const setPreset = useCallback((p: VolumePreset) => {
     setPresetRaw(p);
     const v = VOLUME_PRESETS[p];
     setCallParams((prev) => ({ ...prev, monthlyCalls: v.calls }));
     setClaimsParams((prev) => ({ ...prev, monthlyClaims: v.claims }));
-    setLastUpdated(new Date());
-  }, []);
+    triggerSync();
+  }, [triggerSync]);
 
   const wrappedSetCallParams = useCallback((p: CallCenterParams) => {
     setCallParams(p);
-    setLastUpdated(new Date());
-  }, []);
+    triggerSync();
+  }, [triggerSync]);
 
   const wrappedSetClaimsParams = useCallback((p: ClaimsParams) => {
     setClaimsParams(p);
-    setLastUpdated(new Date());
-  }, []);
+    triggerSync();
+  }, [triggerSync]);
 
   const wrappedSetPlatformParams = useCallback((p: PlatformParams) => {
     setPlatformParams(p);
-    setLastUpdated(new Date());
-  }, []);
+    triggerSync();
+  }, [triggerSync]);
 
   const results = useMemo(
     () => calculateROI(callParams, claimsParams, platformParams),
@@ -111,6 +123,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         setDrawerOpen,
         competitiveIndexOpen,
         setCompetitiveIndexOpen,
+        activeTab,
+        setActiveTab,
+        isSyncing,
       }}
     >
       {children}
