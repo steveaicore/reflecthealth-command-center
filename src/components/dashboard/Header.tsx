@@ -4,6 +4,7 @@ import { SlidersHorizontal, Shield, Eye, RefreshCw, Phone, FileText, Globe, Tren
 import { type VolumePreset } from "@/lib/roi-calculations";
 import { ScenarioSelector } from "./ScenarioSelector";
 import penguinLogo from "@/assets/penguin-ai-logo.png";
+import reflectLogo from "@/assets/reflect-health-logo.png";
 
 const presetLabels: Record<VolumePreset, string> = {
   low: "Low",
@@ -54,14 +55,7 @@ export function Header() {
       {/* Top bar */}
       <div className="px-5 py-2.5 flex items-center justify-between">
         <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2">
-            <div>
-              <h1 className="text-sm font-semibold text-foreground tracking-tight">
-                Reflect AI <span className="reflect-gradient-text">Ops</span>
-              </h1>
-              <span className="text-[8px] text-muted-foreground leading-none">Command Center</span>
-            </div>
-          </div>
+          <img src={reflectLogo} alt="Reflect Health" className="h-8" />
           <span className="hidden md:inline text-[10px] text-muted-foreground border-l border-border pl-3">
             Operational Intelligence for the Benefits Hub
           </span>
