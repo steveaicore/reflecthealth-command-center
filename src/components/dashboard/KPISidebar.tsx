@@ -13,12 +13,14 @@ export function KPISidebar() {
       value: combined.totalAnnualSavings,
       formatter: fmtCurrency,
       icon: <DollarSign className="h-3 w-3" />,
+      highlight: true,
     },
     {
       label: "ROI",
       value: combined.roi,
       formatter: (n: number) => `${fmtDecimal(n)}x`,
       icon: <TrendingUp className="h-3 w-3" />,
+      highlight: true,
     },
     {
       label: "Payback",
@@ -70,14 +72,18 @@ export function KPISidebar() {
   }
 
   return (
-    <aside className="w-[220px] border-l border-border bg-card p-3 flex flex-col gap-2 overflow-y-auto shrink-0 hidden xl:flex"
-    >
-      <span className="text-[9px] font-semibold uppercase tracking-[0.15em] text-primary mb-1">
+    <aside className="w-[220px] border-l border-border bg-card p-3 flex flex-col gap-2 overflow-y-auto shrink-0 hidden xl:flex">
+      <span className="text-[9px] font-semibold uppercase tracking-[0.15em] reflect-gradient-text mb-1">
         Live Operational Impact
       </span>
 
       {kpis.map((kpi) => (
-        <div key={kpi.label} className="flex items-start gap-1.5 py-1.5 border-b border-border/50 last:border-0">
+        <div
+          key={kpi.label}
+          className={`flex items-start gap-1.5 py-1.5 border-b border-border/50 last:border-0 ${
+            kpi.highlight ? "reflect-border" : ""
+          }`}
+        >
           <span className="text-primary mt-0.5">{kpi.icon}</span>
           <div className="flex flex-col min-w-0">
             <span className="text-[9px] text-muted-foreground leading-tight truncate">{kpi.label}</span>
@@ -90,7 +96,7 @@ export function KPISidebar() {
         </div>
       ))}
 
-      <button className="mt-auto flex items-center justify-center gap-1.5 py-2 rounded bg-primary text-primary-foreground text-[10px] font-semibold hover:opacity-90 transition-opacity">
+      <button className="mt-auto flex items-center justify-center gap-1.5 py-2 rounded reflect-gradient text-white text-[10px] font-semibold hover:opacity-90 transition-opacity">
         <Download className="h-3 w-3" />
         {mode === "internal" ? "Export Internal" : "Export TPA"}
       </button>

@@ -2,6 +2,7 @@ import { useDashboard } from "@/contexts/DashboardContext";
 import { fmtCurrency, fmtDecimal, fmtNumber, fmtPct } from "@/lib/format";
 import { MetricCard } from "./MetricCard";
 import { ClaimsFeed, InsightCard } from "./LiveFeed";
+import { ClaimsQueue } from "./ClaimsQueue";
 import { FileText, Clock, Users, DollarSign } from "lucide-react";
 
 export function Module2() {
@@ -49,6 +50,8 @@ export function Module2() {
           />
         )}
       </div>
+
+      <ClaimsQueue />
 
       <InsightCard>
         <span className="font-mono text-foreground">{fmtPct(claimsParams.manualReviewPct)}</span> flagged for review · 
