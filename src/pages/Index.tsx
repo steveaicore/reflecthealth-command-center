@@ -1,32 +1,36 @@
-import { DashboardProvider } from "@/contexts/DashboardContext";
+import { DashboardProvider, useDashboard } from "@/contexts/DashboardContext";
 import { Header } from "@/components/dashboard/Header";
 import { ControlsDrawer } from "@/components/dashboard/ControlsDrawer";
 import { KPISidebar } from "@/components/dashboard/KPISidebar";
 import { Module1 } from "@/components/dashboard/Module1";
 import { Module2 } from "@/components/dashboard/Module2";
 import { Module3 } from "@/components/dashboard/Module3";
-import { CompetitiveIndex } from "@/components/dashboard/CompetitiveIndex";
+import { ExecutiveROI } from "@/components/dashboard/ExecutiveROI";
 
-const Index = () => {
+function DashboardContent() {
+  const { activeTab } = useDashboard();
+
   return (
-    <DashboardProvider>
-      <div className="min-h-screen flex flex-col bg-background">
-        <Header />
-        <div className="flex flex-1 overflow-hidden">
-          {/* Main content */}
-          <main className="flex-1 overflow-y-auto p-6 space-y-5">
-            <Module1 />
-            <Module2 />
-            <Module3 />
-            <CompetitiveIndex />
-          </main>
-          {/* KPI Sidebar */}
-          <KPISidebar />
-        </div>
-        <ControlsDrawer />
+    <div className="min-h-screen flex flex-col bg-background">
+      <Header />
+      <div className="flex flex-1 overflow-hidden">
+        <main className="flex-1 overflow-y-auto p-5">
+          {activeTab === "contact" && <Module1 />}
+          {activeTab === "claims" && <Module2 />}
+          {activeTab === "network" && <Module3 />}
+          {activeTab === "roi" && <ExecutiveROI />}
+        </main>
+        <KPISidebar />
       </div>
-    </DashboardProvider>
+      <ControlsDrawer />
+    </div>
   );
-};
+}
+
+const Index = () => (
+  <DashboardProvider>
+    <DashboardContent />
+  </DashboardProvider>
+);
 
 export default Index;

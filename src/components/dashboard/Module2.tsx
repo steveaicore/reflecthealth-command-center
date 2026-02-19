@@ -1,6 +1,7 @@
 import { useDashboard } from "@/contexts/DashboardContext";
 import { fmtCurrency, fmtDecimal, fmtNumber, fmtPct } from "@/lib/format";
 import { MetricCard } from "./MetricCard";
+import { ClaimsFeed, InsightCard } from "./LiveFeed";
 import { FileText, Clock, Users, DollarSign } from "lucide-react";
 
 export function Module2() {
@@ -8,21 +9,10 @@ export function Module2() {
   const { claims } = results;
 
   return (
-    <div className="module-panel">
-      <div className="module-header">
-        <div className="flex items-center gap-2">
-          <FileText className="h-4 w-4 text-primary" />
-          <h2 className="text-sm font-semibold text-foreground">
-            Module 2: Claims Automation & Margin Optimization
-          </h2>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="status-dot" />
-          <span className="text-[10px] text-muted-foreground">Active</span>
-        </div>
-      </div>
+    <div className="space-y-4">
+      <ClaimsFeed />
 
-      <div className="p-5 grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <MetricCard
           label="Annual Claims"
           value={fmtNumber(claims.annualClaims)}
@@ -60,16 +50,11 @@ export function Module2() {
         )}
       </div>
 
-      <div className="px-5 pb-4">
-        <div className="rounded-lg bg-secondary/50 p-3 text-xs text-muted-foreground leading-relaxed">
-          <span className="font-mono text-foreground">{fmtPct(claimsParams.manualReviewPct)}</span> of
-          claims flagged for manual review are processed at{" "}
-          <span className="font-mono text-foreground">{claimsParams.manualTimeMin} min</span> per claim.
-          Reflect AI reduces labor burden by{" "}
-          <span className="font-mono text-foreground">{fmtPct(claimsParams.aiLaborReductionPct)}</span>,
-          eliminating redundant adjudication cycles.
-        </div>
-      </div>
+      <InsightCard>
+        <span className="font-mono text-foreground">{fmtPct(claimsParams.manualReviewPct)}</span> flagged for review · 
+        <span className="font-mono text-foreground"> {claimsParams.manualTimeMin}m</span>/claim · 
+        <span className="font-mono text-foreground"> {fmtPct(claimsParams.aiLaborReductionPct)}</span> AI labor reduction
+      </InsightCard>
     </div>
   );
 }

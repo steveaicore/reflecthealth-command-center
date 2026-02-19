@@ -1,5 +1,6 @@
 import { useDashboard } from "@/contexts/DashboardContext";
-import { fmtCurrency, fmtDecimal, fmtNumber } from "@/lib/format";
+import { fmtCurrency, fmtDecimal } from "@/lib/format";
+import { CountUpValue } from "./CountUpValue";
 import { Download, TrendingUp, Users, DollarSign, Clock, Zap } from "lucide-react";
 
 export function KPISidebar() {
@@ -8,75 +9,91 @@ export function KPISidebar() {
 
   const kpis = [
     {
-      label: "Total Annual Savings",
-      value: fmtCurrency(combined.totalAnnualSavings),
-      icon: <DollarSign className="h-3.5 w-3.5" />,
+      label: "Total Savings",
+      value: combined.totalAnnualSavings,
+      formatter: fmtCurrency,
+      icon: <DollarSign className="h-3 w-3" />,
     },
     {
-      label: "ROI Multiple",
-      value: `${fmtDecimal(combined.roi)}x`,
-      icon: <TrendingUp className="h-3.5 w-3.5" />,
+      label: "ROI",
+      value: combined.roi,
+      formatter: (n: number) => `${fmtDecimal(n)}x`,
+      icon: <TrendingUp className="h-3 w-3" />,
     },
     {
-      label: "Payback Period",
-      value: `${fmtDecimal(combined.paybackMonths)} mo`,
-      icon: <Clock className="h-3.5 w-3.5" />,
+      label: "Payback",
+      value: combined.paybackMonths,
+      formatter: (n: number) => `${fmtDecimal(n)} mo`,
+      icon: <Clock className="h-3 w-3" />,
     },
     {
-      label: "FTE Reduction (Calls)",
-      value: fmtDecimal(callCenter.fteSaved),
-      icon: <Users className="h-3.5 w-3.5" />,
+      label: "FTE (Calls)",
+      value: callCenter.fteSaved,
+      formatter: (n: number) => fmtDecimal(n),
+      icon: <Users className="h-3 w-3" />,
     },
     {
-      label: "FTE Reduction (Claims)",
-      value: fmtDecimal(claims.fteSaved),
-      icon: <Users className="h-3.5 w-3.5" />,
+      label: "FTE (Claims)",
+      value: claims.fteSaved,
+      formatter: (n: number) => fmtDecimal(n),
+      icon: <Users className="h-3 w-3" />,
     },
     {
-      label: "Call Center Savings",
-      value: fmtCurrency(callCenter.annualSavings),
-      icon: <Zap className="h-3.5 w-3.5" />,
+      label: "Call Savings",
+      value: callCenter.annualSavings,
+      formatter: fmtCurrency,
+      icon: <Zap className="h-3 w-3" />,
     },
     {
       label: "Claims Savings",
-      value: fmtCurrency(claims.annualSavings),
-      icon: <Zap className="h-3.5 w-3.5" />,
+      value: claims.annualSavings,
+      formatter: fmtCurrency,
+      icon: <Zap className="h-3 w-3" />,
     },
   ];
 
-  // Internal mode shows margin data
   if (mode === "internal") {
-    kpis.push({
-      label: "Annual Manual Cost (Calls)",
-      value: fmtCurrency(callCenter.annualManualCost),
-      icon: <DollarSign className="h-3.5 w-3.5" />,
-    });
-    kpis.push({
-      label: "Annual Manual Cost (Claims)",
-      value: fmtCurrency(claims.annualManualCost),
-      icon: <DollarSign className="h-3.5 w-3.5" />,
-    });
+    kpis.push(
+      {
+        label: "Manual Cost (Calls)",
+        value: callCenter.annualManualCost,
+        formatter: fmtCurrency,
+        icon: <DollarSign className="h-3 w-3" />,
+      },
+      {
+        label: "Manual Cost (Claims)",
+        value: claims.annualManualCost,
+        formatter: fmtCurrency,
+        icon: <DollarSign className="h-3 w-3" />,
+      }
+    );
   }
 
   return (
-    <aside className="w-[260px] border-l border-border bg-card/40 p-4 flex flex-col gap-3 overflow-y-auto shrink-0 hidden xl:flex">
-      <div className="flex items-center justify-between mb-1">
-        <span className="text-xs font-semibold uppercase tracking-widest text-primary">KPI Snapshot</span>
-      </div>
+    <aside className="w-[220px] border-l border-border p-3 flex flex-col gap-2 overflow-y-auto shrink-0 hidden xl:flex"
+      style={{ background: "hsl(220, 45%, 5%)" }}
+    >
+      <span className="text-[9px] font-semibold uppercase tracking-[0.15em] text-primary mb-1">
+        Live Operational Impact
+      </span>
 
       {kpis.map((kpi) => (
-        <div key={kpi.label} className="flex items-start gap-2 py-2 border-b border-border last:border-0">
+        <div key={kpi.label} className="flex items-start gap-1.5 py-1.5 border-b border-border/50 last:border-0">
           <span className="text-primary mt-0.5">{kpi.icon}</span>
-          <div className="flex flex-col">
-            <span className="text-[11px] text-muted-foreground leading-tight">{kpi.label}</span>
-            <span className="text-sm font-semibold font-mono text-foreground">{kpi.value}</span>
+          <div className="flex flex-col min-w-0">
+            <span className="text-[9px] text-muted-foreground leading-tight truncate">{kpi.label}</span>
+            <CountUpValue
+              value={kpi.value}
+              formatter={kpi.formatter}
+              className="text-xs font-semibold font-mono text-foreground"
+            />
           </div>
         </div>
       ))}
 
-      <button className="mt-auto flex items-center justify-center gap-2 py-2.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition-opacity">
-        <Download className="h-3.5 w-3.5" />
-        {mode === "internal" ? "Export Internal Report" : "Export TPA Summary"}
+      <button className="mt-auto flex items-center justify-center gap-1.5 py-2 rounded bg-primary text-primary-foreground text-[10px] font-semibold hover:opacity-90 transition-opacity">
+        <Download className="h-3 w-3" />
+        {mode === "internal" ? "Export Internal" : "Export TPA"}
       </button>
     </aside>
   );
