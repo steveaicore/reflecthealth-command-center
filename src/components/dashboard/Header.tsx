@@ -1,8 +1,10 @@
-import { useDashboard, type DashboardTab } from "@/contexts/DashboardContext";
+import { useState } from "react";
+import { useDashboard, type DashboardTab, type DeploymentMode } from "@/contexts/DashboardContext";
 import { useSimulation } from "@/contexts/SimulationContext";
-import { SlidersHorizontal, Shield, Eye, RefreshCw, Phone, FileText, Globe, TrendingUp, Volume2, VolumeX } from "lucide-react";
+import { SlidersHorizontal, Shield, Eye, RefreshCw, Phone, FileText, Globe, TrendingUp, Volume2, VolumeX, Monitor, Plug, Info } from "lucide-react";
 import { type VolumePreset } from "@/lib/roi-calculations";
 import { ScenarioSelector } from "./ScenarioSelector";
+import { DeploymentComparison } from "./embedded/DeploymentComparison";
 import penguinLogo from "@/assets/penguin-ai-logo.png";
 import reflectLogo from "@/assets/reflect-health-logo.png";
 
@@ -48,7 +50,8 @@ function ImmersiveToggle() {
 }
 
 export function Header() {
-  const { mode, setMode, preset, setPreset, setDrawerOpen, activeTab, setActiveTab } = useDashboard();
+  const { mode, setMode, preset, setPreset, setDrawerOpen, activeTab, setActiveTab, deploymentMode, setDeploymentMode } = useDashboard();
+  const [comparisonOpen, setComparisonOpen] = useState(false);
 
   return (
     <header className="border-b border-border bg-card/90 backdrop-blur-sm">
@@ -61,10 +64,40 @@ export function Header() {
           </span>
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2">
-            <img src={penguinLogo} alt="Penguin AI" className="h-4 opacity-40" />
+        <div className="flex items-center gap-3">
+          {/* Deployment Mode Toggle */}
+          <div className="flex items-center bg-secondary rounded-md p-0.5 gap-0.5">
+            <button
+              onClick={() => setDeploymentMode("white-label")}
+              className={`flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium rounded transition-all ${
+                deploymentMode === "white-label"
+                  ? "reflect-gradient text-white"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Monitor className="h-2.5 w-2.5" />
+              White-Label
+            </button>
+            <button
+              onClick={() => setDeploymentMode("embedded")}
+              className={`flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium rounded transition-all ${
+                deploymentMode === "embedded"
+                  ? "five9-accent-bg text-white"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Plug className="h-2.5 w-2.5" />
+              Embedded
+            </button>
           </div>
+          <button
+            onClick={() => setComparisonOpen(true)}
+            className="text-muted-foreground hover:text-foreground transition-colors"
+            title="Compare deployment modes"
+          >
+            <Info className="h-3.5 w-3.5" />
+          </button>
+          <img src={penguinLogo} alt="Penguin AI" className="h-4 opacity-40" />
         </div>
       </div>
 
@@ -149,6 +182,8 @@ export function Header() {
           </button>
         ))}
       </div>
+
+      <DeploymentComparison open={comparisonOpen} onClose={() => setComparisonOpen(false)} />
     </header>
   );
 }
