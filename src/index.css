@@ -61,6 +61,12 @@
     --status-human: 220 14% 50%;
     --status-escalation: 38 92% 50%;
     --status-resolved: 160 60% 45%;
+
+    /* Five9 embedded theme */
+    --five9-navy: 220 60% 20%;
+    --five9-dark: 220 50% 15%;
+    --five9-accent: 210 100% 50%;
+    --five9-muted: 220 15% 55%;
   }
 }
 
@@ -224,5 +230,53 @@
   @keyframes stage-light {
     0%, 100% { opacity: 0.4; background: hsl(var(--muted)); }
     20%, 80% { opacity: 1; background: linear-gradient(135deg, hsl(var(--reflect-pink)), hsl(var(--reflect-orange))); }
+  }
+
+  /* ===== Five9 Embedded Mode ===== */
+  .five9-bg {
+    background: hsl(220 20% 95%);
+  }
+
+  .five9-header {
+    background: linear-gradient(135deg, hsl(var(--five9-dark)), hsl(var(--five9-navy)));
+  }
+
+  .five9-sidebar {
+    background: hsl(var(--five9-dark));
+    border-right: 1px solid hsl(var(--five9-navy));
+  }
+
+  .five9-panel-bg {
+    background: hsl(0 0% 100%);
+  }
+
+  .five9-card {
+    @apply rounded border border-border bg-card;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+
+  .five9-border {
+    border-color: hsl(var(--border));
+  }
+
+  .five9-active-border {
+    border-color: hsl(var(--five9-accent) / 0.3);
+    box-shadow: 0 0 0 1px hsl(var(--five9-accent) / 0.1);
+  }
+
+  .five9-accent-bg {
+    background: hsl(var(--five9-accent));
+  }
+
+  .text-five9-accent {
+    color: hsl(var(--five9-accent));
+  }
+
+  .text-five9-muted {
+    color: hsl(var(--five9-muted));
+  }
+
+  .bg-five9-accent\/10 {
+    background: hsl(var(--five9-accent) / 0.1);
   }
 }

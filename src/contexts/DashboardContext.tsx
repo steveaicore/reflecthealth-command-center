@@ -11,10 +11,13 @@ import {
 
 export type ViewMode = "internal" | "tpa-demo";
 export type DashboardTab = "contact" | "claims" | "network" | "roi";
+export type DeploymentMode = "white-label" | "embedded";
 
 interface DashboardState {
   mode: ViewMode;
   setMode: (m: ViewMode) => void;
+  deploymentMode: DeploymentMode;
+  setDeploymentMode: (d: DeploymentMode) => void;
   preset: VolumePreset;
   setPreset: (p: VolumePreset) => void;
   callParams: CallCenterParams;
@@ -60,6 +63,7 @@ const DEFAULT_PLATFORM: PlatformParams = {
 
 export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const [mode, setMode] = useState<ViewMode>("internal");
+  const [deploymentMode, setDeploymentMode] = useState<DeploymentMode>("white-label");
   const [preset, setPresetRaw] = useState<VolumePreset>("medium");
   const [callParams, setCallParams] = useState(DEFAULT_CALL);
   const [claimsParams, setClaimsParams] = useState(DEFAULT_CLAIMS);
@@ -109,6 +113,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       value={{
         mode,
         setMode,
+        deploymentMode,
+        setDeploymentMode,
         preset,
         setPreset,
         callParams,

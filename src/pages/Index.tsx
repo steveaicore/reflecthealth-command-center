@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef } from "react";
 import { DashboardProvider, useDashboard } from "@/contexts/DashboardContext";
 import { SimulationProvider } from "@/contexts/SimulationContext";
 import { Header } from "@/components/dashboard/Header";
@@ -10,28 +11,46 @@ import { ExecutiveROI } from "@/components/dashboard/ExecutiveROI";
 import { LiveOrchestration } from "@/components/dashboard/LiveOrchestration";
 import { ImmersiveAudio } from "@/components/dashboard/ImmersiveAudio";
 import { DashboardFooter } from "@/components/dashboard/Footer";
+import { Five9Layout } from "@/components/dashboard/embedded/Five9Layout";
+import { TransitionOverlay } from "@/components/dashboard/embedded/TransitionOverlay";
 
 function DashboardContent() {
-  const { activeTab } = useDashboard();
+  const { activeTab, deploymentMode } = useDashboard();
+  const [showTransition, setShowTransition] = useState(false);
+  const prevMode = useRef(deploymentMode);
+
+  useEffect(() => {
+    if (prevMode.current !== deploymentMode) {
+      setShowTransition(true);
+      prevMode.current = deploymentMode;
+    }
+  }, [deploymentMode]);
 
   return (
     <SimulationProvider>
-      <div className="min-h-screen flex flex-col bg-background">
-        <Header />
-        <div className="flex flex-1 overflow-hidden">
-          <main className="flex-1 overflow-y-auto p-5 space-y-4">
-            <LiveOrchestration />
-            {activeTab === "contact" && <Module1 />}
-            {activeTab === "claims" && <Module2 />}
-            {activeTab === "network" && <Module3 />}
-            {activeTab === "roi" && <ExecutiveROI />}
-          </main>
-          <KPISidebar />
+      <TransitionOverlay mode={deploymentMode} visible={showTransition} />
+
+      {deploymentMode === "embedded" ? (
+        <Five9Layout />
+      ) : (
+        <div className="min-h-screen flex flex-col bg-background">
+          <Header />
+          <div className="flex flex-1 overflow-hidden">
+            <main className="flex-1 overflow-y-auto p-5 space-y-4">
+              <LiveOrchestration />
+              {activeTab === "contact" && <Module1 />}
+              {activeTab === "claims" && <Module2 />}
+              {activeTab === "network" && <Module3 />}
+              {activeTab === "roi" && <ExecutiveROI />}
+            </main>
+            <KPISidebar />
+          </div>
+          <DashboardFooter />
+          <ControlsDrawer />
         </div>
-        <DashboardFooter />
-        <ControlsDrawer />
-        <ImmersiveAudio />
-      </div>
+      )}
+
+      <ImmersiveAudio />
     </SimulationProvider>
   );
 }
