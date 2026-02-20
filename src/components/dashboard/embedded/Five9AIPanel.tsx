@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSimulation } from "@/contexts/SimulationContext";
 import { useDashboard } from "@/contexts/DashboardContext";
 import { DetailModal } from "../DetailModal";
@@ -20,6 +20,13 @@ export function Five9AIPanel() {
   const [draftPopulated, setDraftPopulated] = useState(false);
   const [confidenceModalOpen, setConfidenceModalOpen] = useState(false);
   const [complianceModalOpen, setComplianceModalOpen] = useState(false);
+  const [draftSent, setDraftSent] = useState(false);
+
+  // Reset draft state when active event changes
+  useEffect(() => {
+    setDraftPopulated(false);
+    setDraftSent(false);
+  }, [activeEvent?.id]);
 
   const suggestedResponse = activeEvent
     ? `Based on policy section 7.4, the ${activeEvent.reason.toLowerCase()} for ${activeEvent.payer} is confirmed. ${
@@ -48,8 +55,11 @@ export function Five9AIPanel() {
 
       {/* Pipeline */}
       <div className="five9-card p-2.5 space-y-2">
-        <div className="text-[9px] font-semibold uppercase tracking-[0.12em] text-five9-muted">
-          Processing Pipeline
+        <div className="flex items-center gap-1.5">
+          <img src={penguinLogo} alt="Penguin AI" className="h-3 w-3 object-contain" />
+          <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-five9-muted">
+            Processing Pipeline
+          </span>
         </div>
         <div className="flex items-center gap-1">
           {PIPELINE_STAGES.map((stage, i) => (
@@ -129,8 +139,16 @@ export function Five9AIPanel() {
                 </div>
               </div>
               <div className="flex gap-1.5">
-                <button className="flex-1 py-1.5 rounded text-[10px] font-medium bg-emerald-500 text-white hover:bg-emerald-600 transition-colors">
-                  ✓ Send Draft
+                <button
+                  onClick={() => setDraftSent(true)}
+                  disabled={draftSent}
+                  className={`flex-1 py-1.5 rounded text-[10px] font-medium transition-colors ${
+                    draftSent
+                      ? "bg-emerald-600 text-white cursor-default"
+                      : "bg-emerald-500 text-white hover:bg-emerald-600"
+                  }`}
+                >
+                  {draftSent ? "✓ Draft Sent" : "✓ Send Draft"}
                 </button>
                 <button
                   onClick={() => setDraftPopulated(false)}
@@ -149,8 +167,11 @@ export function Five9AIPanel() {
         onClick={() => setComplianceModalOpen(true)}
         className="five9-card p-2.5 space-y-2 w-full text-left hover:border-five9-accent/30 transition-colors"
       >
-        <div className="text-[9px] font-semibold uppercase tracking-[0.12em] text-five9-muted">
-          Real-time Compliance
+        <div className="flex items-center gap-1.5">
+          <img src={penguinLogo} alt="Penguin AI" className="h-3 w-3 object-contain" />
+          <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-five9-muted">
+            Real-time Compliance
+          </span>
         </div>
         <div className="space-y-1">
           {complianceFlags.map((flag) => (
