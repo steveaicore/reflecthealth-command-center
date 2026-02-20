@@ -275,23 +275,23 @@ export function LiveCallSimulation() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-five9-muted">
+          <div className="type-h3 text-foreground">
             Live AI Call Simulation
           </div>
           {currentIntent && callStatus !== "idle" && (
-            <div className="text-[9px] text-five9-muted mt-0.5">
+            <div className="type-body mt-0.5">
               {currentIntent} · Confidence {callConfidence}%
             </div>
           )}
         </div>
         <div className="flex items-center gap-1.5">
           {callCount > 0 && (
-            <span className="text-[9px] font-mono text-five9-muted">#{callCount}</span>
+            <span className="type-micro font-mono text-five9-muted">#{callCount}</span>
           )}
           <div className="flex items-center bg-secondary rounded-md p-0.5 gap-0.5">
             <button
               onClick={handleToggle}
-              className={`flex items-center gap-1 px-2 py-1 text-[9px] font-semibold rounded transition-all ${
+              className={`flex items-center gap-1 px-2 py-1 type-micro font-semibold rounded transition-all ${
                 isLiveSimulation
                   ? "five9-accent-bg text-white"
                   : "text-five9-muted hover:text-foreground"
@@ -302,7 +302,7 @@ export function LiveCallSimulation() {
             </button>
             <button
               onClick={() => setAudioEnabled(!audioEnabled)}
-              className={`flex items-center gap-1 px-2 py-1 text-[9px] font-semibold rounded transition-all ${
+              className={`flex items-center gap-1 px-2 py-1 type-micro font-semibold rounded transition-all ${
                 audioEnabled
                   ? "bg-emerald-500/30 text-emerald-300"
                   : "text-five9-muted hover:text-foreground"
@@ -317,21 +317,21 @@ export function LiveCallSimulation() {
 
       {/* Status banner */}
       {callStatus === "incoming" && (
-        <div className="rounded p-2 flex items-center gap-2 text-[11px] font-medium bg-primary/10 border border-primary/20 text-primary animate-pulse">
+        <div className="rounded p-2 flex items-center gap-2 type-body font-medium bg-primary/10 border border-primary/20 text-primary animate-pulse">
           <Timer className="h-3.5 w-3.5" />
           Incoming Call — {currentIntent}
         </div>
       )}
 
       {callStatus === "resolved" && (
-        <div className="rounded p-2 flex items-center gap-2 text-[11px] font-medium bg-emerald-500/10 border border-emerald-500/20 text-emerald-700">
+        <div className="rounded p-2 flex items-center gap-2 type-body font-medium bg-emerald-500/10 border border-emerald-500/20 text-emerald-700">
           <CheckCircle2 className="h-3.5 w-3.5" />
           Resolved by AI — No agent intervention required
         </div>
       )}
 
       {callStatus === "escalated" && (
-        <div className="rounded p-2 flex items-center gap-2 text-[11px] font-medium bg-amber-500/10 border border-amber-500/20 text-amber-700">
+        <div className="rounded p-2 flex items-center gap-2 type-body font-medium bg-amber-500/10 border border-amber-500/20 text-amber-700">
           <AlertTriangle className="h-3.5 w-3.5" />
           Escalated to Agent — Confidence {callConfidence}% &lt; {confidenceThreshold}%
         </div>
@@ -340,7 +340,7 @@ export function LiveCallSimulation() {
       {/* Transcript */}
       <div className="space-y-2 flex-1 overflow-y-auto max-h-[300px]">
         {transcript.length === 0 && callStatus === "idle" && (
-          <div className="text-[11px] text-five9-muted text-center py-8">
+          <div className="type-body text-five9-muted text-center py-8">
             {isLiveSimulation ? "Starting next call..." : "Enable Live Simulation to start"}
           </div>
         )}
@@ -356,7 +356,7 @@ export function LiveCallSimulation() {
               )}
             </div>
             <div className={`five9-card p-2 max-w-[80%] ${line.speaker === "ai" ? "five9-active-border" : ""}`}>
-              <p className="text-[11px] text-foreground leading-relaxed">
+              <p className="type-body-lg text-foreground" style={{ fontSize: "13px", lineHeight: 1.55 }}>
                 {line.typing ? (
                   <span className="inline-flex items-center gap-1">
                     {line.text}
@@ -374,15 +374,15 @@ export function LiveCallSimulation() {
       {/* Outcome details */}
       {callStatus === "resolved" && (
         <div className="five9-card p-2 space-y-1 five9-active-border">
-          <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-[10px]">
-            <span className="text-five9-muted">Outcome:</span>
-            <span className="font-medium text-emerald-600">Call Deflected</span>
-            <span className="text-five9-muted">Confidence:</span>
-            <span className="font-medium font-mono text-foreground">{callConfidence}%</span>
-             <span className="text-five9-muted">Cost Impact:</span>
-            <span className="font-medium font-mono text-emerald-600">+$4.32</span>
-            <span className="text-five9-muted">Minutes Saved:</span>
-            <span className="font-medium font-mono text-emerald-600">+6 min</span>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
+            <span className="type-body">Outcome:</span>
+            <span className="type-body font-medium text-emerald-600">Call Deflected</span>
+            <span className="type-body">Confidence:</span>
+            <span className="type-body font-medium font-mono text-foreground">{callConfidence}%</span>
+            <span className="type-body">Cost Impact:</span>
+            <span className="type-body font-medium font-mono text-emerald-600">+$4.32</span>
+            <span className="type-body">Minutes Saved:</span>
+            <span className="type-body font-medium font-mono text-emerald-600">+6 min</span>
           </div>
         </div>
       )}
@@ -390,23 +390,23 @@ export function LiveCallSimulation() {
       {/* Running metrics */}
       {(metrics.deflected > 0 || metrics.escalated > 0) && (
         <div className="five9-card p-2">
-          <div className="text-[9px] font-semibold uppercase tracking-[0.12em] text-five9-muted mb-1">Session Metrics</div>
-          <div className="grid grid-cols-4 gap-1 text-[10px]">
+          <div className="type-micro uppercase tracking-[0.12em] text-five9-muted mb-1.5">Session Metrics</div>
+          <div className="grid grid-cols-4 gap-1">
             <div className="text-center">
-              <div className="font-bold font-mono text-emerald-600">{metrics.deflected}</div>
-              <div className="text-five9-muted">Deflected</div>
+              <div className="text-[16px] font-semibold font-mono text-emerald-600">{metrics.deflected}</div>
+              <div className="type-micro text-five9-muted">Deflected</div>
             </div>
             <div className="text-center">
-              <div className="font-bold font-mono text-amber-600">{metrics.escalated}</div>
-              <div className="text-five9-muted">Escalated</div>
+              <div className="text-[16px] font-semibold font-mono text-amber-600">{metrics.escalated}</div>
+              <div className="type-micro text-five9-muted">Escalated</div>
             </div>
             <div className="text-center">
-              <div className="font-bold font-mono text-foreground">{metrics.minutesSaved}</div>
-              <div className="text-five9-muted">Min Saved</div>
+              <div className="text-[16px] font-semibold font-mono text-foreground">{metrics.minutesSaved}</div>
+              <div className="type-micro text-five9-muted">Min Saved</div>
             </div>
             <div className="text-center">
-              <div className="font-bold font-mono text-emerald-600">${metrics.costAvoided}</div>
-              <div className="text-five9-muted">Avoided</div>
+              <div className="text-[16px] font-semibold font-mono text-emerald-600">${metrics.costAvoided}</div>
+              <div className="type-micro text-five9-muted">Avoided</div>
             </div>
           </div>
         </div>

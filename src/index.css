@@ -109,6 +109,73 @@
 }
 
 @layer components {
+  /* ── Typography Scale ────────────────────────── */
+
+  /* Display XL — Hero financial metrics */
+  .type-display {
+    font-size: 40px;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  /* H2 — Section headers */
+  .type-h2 {
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  /* H3 — Module / card titles */
+  .type-h3 {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    line-height: 1.4;
+  }
+
+  /* Body Large — feed items, response text */
+  .type-body-lg {
+    font-size: 15px;
+    font-weight: 400;
+    line-height: 1.5;
+  }
+
+  /* Body Standard — metadata, secondary info */
+  .type-body {
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.5;
+    color: hsl(var(--muted-foreground));
+  }
+
+  /* Micro / Status — badges, labels */
+  .type-micro {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.4px;
+  }
+
+  /* KPI Sidebar metric value */
+  .type-kpi-value {
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+    line-height: 1.1;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Five9 confidence value */
+  .type-confidence {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.2px;
+    line-height: 1;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ── Cards ────────────────────────────────────── */
   .metric-card {
     @apply bg-card p-4 border;
     border-radius: 16px;
@@ -117,12 +184,19 @@
   }
 
   .metric-value {
-    @apply text-2xl font-bold font-mono tracking-tight;
+    font-size: 40px;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+    font-family: 'JetBrains Mono', monospace;
     color: hsl(var(--primary));
   }
 
   .metric-label {
-    @apply text-[10px] font-medium uppercase tracking-widest;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
     color: hsl(var(--muted-foreground));
   }
 
