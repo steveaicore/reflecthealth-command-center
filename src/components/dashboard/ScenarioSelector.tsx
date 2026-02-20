@@ -11,9 +11,9 @@ interface Scenario {
 }
 
 const SCENARIOS: Scenario[] = [
-  { label: "Enterprise", preset: "high", description: "40K calls | 42K claims/mo" },
+  { label: "Enterprise", preset: "high", description: "50K calls | 45K claims/mo" },
   { label: "Baseline", preset: "medium", description: "29K calls | 30K claims/mo" },
-  { label: "Lean", preset: "low", description: "20K calls | 21K claims/mo" },
+  { label: "Lean", preset: "low", description: "15K calls | 20K claims/mo" },
 ];
 
 export function ScenarioSelector() {
