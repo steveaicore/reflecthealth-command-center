@@ -101,7 +101,7 @@ export function calculateROI(
 export type VolumePreset = "low" | "medium" | "high";
 
 export const VOLUME_PRESETS: Record<VolumePreset, { calls: number; claims: number; platformCost?: number }> = {
-  low: { calls: 20300, claims: 21000 },        // ~70% of medium
+  low: { calls: 15000, claims: 20000 },
   medium: { calls: 29000, claims: 30000 },      // baseline
-  high: { calls: 40600, claims: 42000, platformCost: 420000 }, // ~140% of medium, +20% platform
+  high: { calls: 50000, claims: 45000, platformCost: 420000 },
 };
