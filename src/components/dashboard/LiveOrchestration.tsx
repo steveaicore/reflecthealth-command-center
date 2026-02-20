@@ -60,7 +60,7 @@ function ContactFeed() {
   };
 
   return (
-    <div className="flex flex-col gap-1.5 overflow-hidden max-h-[200px]">
+    <div className="flex flex-col gap-1.5 overflow-hidden flex-1">
       <span className="type-micro uppercase tracking-[0.15em] text-muted-foreground section-header-accent mb-1">Live Event Feed</span>
       {events.slice(0, 6).map((evt) => {
         const status = STATUS_CONFIG[evt.status];
@@ -165,9 +165,9 @@ function ROIFeed() {
 
 function Pipeline({ stages, pipeline }: { stages: string[]; pipeline: { activeStage: number; confidence: number; resolutionTime: number; outcome: string } }) {
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2 flex-1">
       <span className="type-micro uppercase tracking-[0.15em] text-muted-foreground section-header-accent">AI Orchestration Flow</span>
-      <div className="flow-bg rounded-lg p-3 border border-border relative">
+      <div className="flow-bg rounded-lg p-3 border border-border relative flex-1 flex flex-col justify-between">
         <div className="flex items-center gap-1 flex-wrap">
           {stages.map((stage, i) => (
             <div key={stage} className="flex items-center gap-1 shrink-0">
@@ -180,7 +180,7 @@ function Pipeline({ stages, pipeline }: { stages: string[]; pipeline: { activeSt
             </div>
           ))}
         </div>
-        <div className="flex items-center gap-4 mt-2">
+        <div className="flex items-center gap-4 mt-3 pt-3 border-t border-border">
           <span className="type-body">Confidence: <span className="font-mono font-semibold text-foreground">{pipeline.confidence}%</span></span>
           <span className="type-body">Processing: <span className="font-mono font-semibold text-foreground">{pipeline.resolutionTime}s</span></span>
           <span className="type-body">Outcome: <span className={`font-semibold ${pipeline.outcome === "Escalated" || pipeline.outcome === "Exception" ? "text-amber-600" : "text-primary"}`}>{pipeline.outcome}</span></span>
@@ -243,13 +243,13 @@ function ROIMetrics() {
 
 function MetricsGrid({ items }: { items: { label: string; value: number; formatter: (n: number) => string; icon: React.ReactNode }[] }) {
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-1.5 flex-1">
       <span className="type-micro uppercase tracking-[0.15em] text-muted-foreground section-header-accent">Live Impact (Today)</span>
-      <div className={`grid ${items.length > 4 ? "grid-cols-3" : "grid-cols-2"} gap-2`}>
+      <div className={`grid ${items.length > 4 ? "grid-cols-3" : "grid-cols-2"} gap-2 flex-1`}>
         {items.map((item) => (
           <div
             key={item.label}
-            className="flex flex-col gap-1 p-2.5 reflect-border rounded-2xl"
+            className="flex flex-col justify-center gap-1 p-2.5 reflect-border rounded-2xl"
             style={{ background: "hsl(335 80% 98%)", border: "1px solid hsl(335 60% 91%)", boxShadow: "0 2px 6px rgba(0,0,0,0.03)" }}
           >
             <div className="flex items-center gap-1.5">
@@ -306,10 +306,10 @@ export function LiveOrchestration() {
             <span className="ml-2 type-body">{config.subtitle}</span>
           </div>
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {feedMap[activeTab]}
-          <Pipeline stages={config.pipelineStages} pipeline={pipelineMap[activeTab]} />
-          {metricsMap[activeTab]}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-stretch">
+          <div className="flex flex-col h-full">{feedMap[activeTab]}</div>
+          <div className="flex flex-col h-full"><Pipeline stages={config.pipelineStages} pipeline={pipelineMap[activeTab]} /></div>
+          <div className="flex flex-col h-full">{metricsMap[activeTab]}</div>
         </div>
       </div>
     </div>
