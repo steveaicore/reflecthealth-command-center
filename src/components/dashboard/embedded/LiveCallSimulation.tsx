@@ -16,58 +16,127 @@ interface CallTemplate {
   script: { speaker: "caller" | "ai"; text: string }[];
 }
 
-const CALL_TEMPLATES: CallTemplate[] = [
+// Weighted script pool: 75% Provider, 25% Member
+const PROVIDER_TEMPLATES: CallTemplate[] = [
   {
     intent: "Benefits Verification",
-    confidenceRange: [88, 96],
+    confidenceRange: [90, 95],
     script: [
-      { speaker: "caller", text: "Hi, I need to verify benefits for a member before scheduling a specialist visit." },
-      { speaker: "ai", text: "Of course. Can you provide the member ID and date of birth?" },
-      { speaker: "caller", text: "Member ID 4578921. Date of birth January 14, 1986." },
-      { speaker: "ai", text: "The member has active coverage. Specialist visits are covered with a thirty dollar copay. No prior auth required for in-network providers." },
+      { speaker: "caller", text: "I'm calling to verify benefits for a UHC Choice Plus member before scheduling a specialist visit." },
+      { speaker: "ai", text: "Please provide the member ID and date of birth." },
+      { speaker: "caller", text: "Member ID 4578921, date of birth January 14, 1986." },
+      { speaker: "ai", text: "Coverage is active. Specialist visits are covered with a thirty-dollar copay. No prior authorization required for in-network providers." },
+      { speaker: "ai", text: "This verification has been completed automatically." },
+    ],
+  },
+  {
+    intent: "Eligibility Check",
+    confidenceRange: [90, 94],
+    script: [
+      { speaker: "caller", text: "Calling to confirm eligibility for member 8824102 effective March 1st." },
+      { speaker: "ai", text: "One moment while I retrieve that record." },
+      { speaker: "ai", text: "Eligibility confirmed. Coverage is active under the employer-sponsored PPO plan." },
+    ],
+  },
+  {
+    intent: "Claim Status",
+    confidenceRange: [88, 92],
+    script: [
+      { speaker: "caller", text: "I'm calling regarding claim number 772451 submitted on February 3rd." },
+      { speaker: "ai", text: "One moment while I retrieve that claim." },
+      { speaker: "ai", text: "The claim was received February 3rd and is currently in processing. Determination expected within five business days." },
+    ],
+  },
+  {
+    intent: "Prior Authorization Status",
+    confidenceRange: [85, 90],
+    script: [
+      { speaker: "caller", text: "Checking the status of a prior authorization request submitted yesterday." },
+      { speaker: "ai", text: "The request is under clinical review. Estimated determination within forty-eight hours." },
+    ],
+  },
+  {
+    intent: "Underpaid Claim Review",
+    confidenceRange: [65, 78],
+    script: [
+      { speaker: "caller", text: "We believe this claim was underpaid and need review." },
+      { speaker: "ai", text: "This scenario requires manual review. Routing to a claims specialist." },
     ],
   },
   {
     intent: "COB Verification",
-    confidenceRange: [82, 94],
+    confidenceRange: [86, 93],
     script: [
-      { speaker: "caller", text: "I'm calling to verify coordination of benefits for a dual-coverage member." },
-      { speaker: "ai", text: "I can help with that. What's the member ID?" },
+      { speaker: "caller", text: "I need to verify coordination of benefits for a dual-coverage member." },
+      { speaker: "ai", text: "Please provide the member ID." },
       { speaker: "caller", text: "Member ID 7823456." },
       { speaker: "ai", text: "This member has primary coverage through UHC and secondary through Aetna. UHC processes first, then Aetna covers the remaining balance up to plan limits." },
     ],
   },
   {
-    intent: "Claim Status",
-    confidenceRange: [90, 97],
+    intent: "Claim Reprocessing Request",
+    confidenceRange: [70, 82],
     script: [
-      { speaker: "caller", text: "I'm calling about the status of claim number 45621." },
-      { speaker: "ai", text: "Let me look that up. Claim 45621 was submitted on February 12th and is currently approved for payment." },
-      { speaker: "caller", text: "When should we expect the payment?" },
-      { speaker: "ai", text: "Payment is scheduled for processing within five business days. The approved amount is four hundred and twelve dollars." },
+      { speaker: "caller", text: "We need claim 554102 reprocessed. The original submission had an incorrect procedure code." },
+      { speaker: "ai", text: "I've located the claim. A reprocessing request has been initiated. Updated determination expected within seven business days." },
     ],
   },
   {
-    intent: "Prior Auth Status",
-    confidenceRange: [78, 90],
+    intent: "Appeal Status Inquiry",
+    confidenceRange: [82, 88],
     script: [
-      { speaker: "caller", text: "I need to check the status of a prior authorization for an MRI." },
-      { speaker: "ai", text: "Sure. Can you provide the authorization reference number?" },
-      { speaker: "caller", text: "It's PA-2024-88341." },
-      { speaker: "ai", text: "That authorization was approved yesterday. The MRI is cleared for scheduling at any in-network imaging facility. Valid for ninety days." },
+      { speaker: "caller", text: "Following up on appeal reference AP-20241." },
+      { speaker: "ai", text: "The appeal is currently under secondary review. A determination letter will be issued within ten business days." },
     ],
   },
   {
-    intent: "ID Card Request",
-    confidenceRange: [92, 98],
+    intent: "Timely Filing Question",
+    confidenceRange: [88, 94],
     script: [
-      { speaker: "caller", text: "A member is requesting a replacement ID card." },
-      { speaker: "ai", text: "I can process that. What is the member ID?" },
-      { speaker: "caller", text: "Member 5529103." },
-      { speaker: "ai", text: "A new ID card has been requested and will be mailed within seven to ten business days. I've also sent a digital copy to the member's email on file." },
+      { speaker: "caller", text: "What is the timely filing deadline for claims under the Cigna PPO plan?" },
+      { speaker: "ai", text: "The timely filing limit is ninety days from the date of service. Electronic submissions must be received by the ninety-day mark." },
     ],
   },
 ];
+
+const MEMBER_TEMPLATES: CallTemplate[] = [
+  {
+    intent: "Claims Status",
+    confidenceRange: [90, 96],
+    script: [
+      { speaker: "caller", text: "I'd like to check the status of a recent claim." },
+      { speaker: "ai", text: "Please provide your member ID." },
+      { speaker: "caller", text: "It's 5529103." },
+      { speaker: "ai", text: "Your claim was processed and approved. Payment was issued on February 15th." },
+    ],
+  },
+  {
+    intent: "ID Card Replacement",
+    confidenceRange: [92, 98],
+    script: [
+      { speaker: "caller", text: "I need a replacement ID card." },
+      { speaker: "ai", text: "A new ID card has been requested. It will arrive within seven to ten business days. A digital copy has also been sent to the email on file." },
+    ],
+  },
+  {
+    intent: "Deductible / OOP Inquiry",
+    confidenceRange: [90, 96],
+    script: [
+      { speaker: "caller", text: "Can you tell me how much of my deductible I've met so far?" },
+      { speaker: "ai", text: "Please provide your member ID." },
+      { speaker: "caller", text: "Member 6641028." },
+      { speaker: "ai", text: "You have met twelve hundred of your two-thousand-dollar individual deductible. Your out-of-pocket maximum balance remaining is four thousand two hundred dollars." },
+    ],
+  },
+];
+
+function pickWeightedTemplate(): CallTemplate {
+  const r = Math.random();
+  if (r < 0.75) {
+    return PROVIDER_TEMPLATES[Math.floor(Math.random() * PROVIDER_TEMPLATES.length)];
+  }
+  return MEMBER_TEMPLATES[Math.floor(Math.random() * MEMBER_TEMPLATES.length)];
+}
 
 type CallStatus = "idle" | "incoming" | "processing" | "resolved" | "escalated";
 
@@ -103,7 +172,7 @@ export function LiveCallSimulation() {
     isRunningRef.current = true;
     abortRef.current = false;
 
-    const template = CALL_TEMPLATES[callIndexRef.current % CALL_TEMPLATES.length];
+    const template = pickWeightedTemplate();
     callIndexRef.current++;
 
     // Generate confidence from template range

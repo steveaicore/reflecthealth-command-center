@@ -9,11 +9,11 @@ const CALLER_VOICE = "EXAVITQu4vr4xnSDxMaL";
 const AI_VOICE = "onwK4e9ZLuTAKqWW03F9";
 
 const EXECUTIVE_SCRIPT: { speaker: "caller" | "ai"; text: string; durationMs: number }[] = [
-  { speaker: "caller", text: "Hi, I'm calling to verify benefits for a UHC member before scheduling a specialist visit.", durationMs: 6000 },
-  { speaker: "ai", text: "Happy to help. Please provide the member ID and date of birth so I can retrieve eligibility details.", durationMs: 8000 },
-  { speaker: "caller", text: "Member ID 4578921. Date of birth January 14, 1986.", durationMs: 4000 },
-  { speaker: "ai", text: "Thank you. The member has active coverage. Specialist visits are covered with a thirty-dollar copay. No prior authorization required for in-network providers.", durationMs: 8000 },
-  { speaker: "ai", text: "This interaction has been automatically resolved.", durationMs: 4000 },
+  { speaker: "caller", text: "I'm calling to verify benefits for a UHC Choice Plus member before scheduling a specialist visit.", durationMs: 6000 },
+  { speaker: "ai", text: "Please provide the member ID and date of birth.", durationMs: 4000 },
+  { speaker: "caller", text: "Member ID 4578921, date of birth January 14, 1986.", durationMs: 4000 },
+  { speaker: "ai", text: "Coverage is active. Specialist visits are covered with a thirty-dollar copay. No prior authorization required for in-network providers.", durationMs: 8000 },
+  { speaker: "ai", text: "This verification has been completed automatically.", durationMs: 4000 },
 ];
 
 // Timed overlays shown during playback
@@ -24,6 +24,7 @@ const TIMED_OVERLAYS: { afterLineIndex: number; label: string; icon: typeof Brai
 
 // Final overlays shown at completion
 const COMPLETION_OVERLAYS = [
+  { label: "Confidence: 92%", icon: Brain, color: "text-primary" },
   { label: "Call Deflected", icon: CheckCircle2, color: "text-emerald-600" },
   { label: "+$4.32 Cost Avoided", icon: DollarSign, color: "text-emerald-600" },
   { label: "+6 Minutes Saved", icon: Clock, color: "text-emerald-600" },
@@ -131,7 +132,7 @@ export function ExecutivePlaybackModal({ open, onClose }: Props) {
         <div className="px-5 py-3 border-b border-border flex items-center justify-between shrink-0">
           <div>
             <h3 className="text-sm font-semibold text-foreground">Executive Playback — Benefits Verification Call</h3>
-            <p className="text-[10px] text-muted-foreground mt-0.5">Incoming · Provider · Benefits Verification · UHC</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">Incoming · Provider · Benefits Verification · UHC Choice Plus</p>
           </div>
           <button onClick={handleClose} className="text-muted-foreground hover:text-foreground">
             <X className="h-4 w-4" />
