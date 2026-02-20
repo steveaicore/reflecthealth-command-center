@@ -4,6 +4,7 @@ import { MetricCard } from "./MetricCard";
 import { ClaimsFeed, InsightCard } from "./LiveFeed";
 import { ClaimsQueue } from "./ClaimsQueue";
 import { EscalationGovernancePanel } from "./EscalationGovernancePanel";
+import { ClaimStatusPanel } from "./ClaimStatusPanel";
 import { FileText, Clock, Users, DollarSign } from "lucide-react";
 
 export function Module2() {
@@ -53,6 +54,9 @@ export function Module2() {
       </div>
 
       <ClaimsQueue />
+
+      {/* Claim Status & Prior Authorization */}
+      <ClaimStatusPanel />
 
       {/* Escalation & Governance */}
       <EscalationGovernancePanel />
