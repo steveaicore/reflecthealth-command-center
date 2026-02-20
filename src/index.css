@@ -67,6 +67,15 @@
     --five9-dark: 220 50% 15%;
     --five9-accent: 210 100% 50%;
     --five9-muted: 220 15% 55%;
+
+    /* Opyn Health theme */
+    --opyn-green: 158 64% 52%;
+    --opyn-green-light: 158 64% 95%;
+    --opyn-purple: 265 60% 55%;
+    --opyn-purple-light: 265 60% 96%;
+    --opyn-bg: 220 20% 98%;
+    --opyn-card: 0 0% 100%;
+    --opyn-muted: 220 10% 55%;
   }
 }
 

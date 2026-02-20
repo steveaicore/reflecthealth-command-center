@@ -11,7 +11,7 @@ import {
 
 export type ViewMode = "internal" | "tpa-demo";
 export type DashboardTab = "contact" | "claims" | "network" | "roi" | "intelligence";
-export type DeploymentMode = "white-label" | "embedded";
+export type DeploymentMode = "white-label" | "embedded" | "opyn";
 
 interface DashboardState {
   mode: ViewMode;
