@@ -18,30 +18,31 @@ Deno.serve(async (req) => {
 
     const turns = callerTurns as string[];
 
-    // Build a numbered conversation sequence so the AI sees what the caller said
-    // at each step and can generate a CONTEXTUALLY CORRECT response to that specific utterance.
+    // Generate N+1 responses: index 0 = opening greeting, indices 1..N = one response per caller turn
+    const totalResponses = turns.length + 1;
+
     const conversationContext = turns
       .map((t, i) => `Turn ${i + 1} — Caller says: "${t}"`)
       .join('\n');
 
     const systemPrompt = `You are Penguin AI, a highly efficient AI voice agent for healthcare call centers (TPAs, insurance carriers, provider offices).
 
-You are being given a sequence of things a CALLER said during an actual call — in the EXACT ORDER they said them.
-Your job is to write what Penguin AI would have said IN RESPONSE to each caller utterance, one response per turn.
+The call flow is: Penguin AI greets → Caller speaks → Penguin AI responds → repeat until resolved.
 
-CRITICAL RULES:
-1. Read each caller utterance CAREFULLY. Your response must DIRECTLY acknowledge or react to what the caller JUST SAID in that specific turn.
-2. Do NOT ask a question that the caller has already answered in a PREVIOUS turn.
-3. Do NOT ask for information that was just provided. If the caller gave a phone number, acknowledge it. If they gave a name, acknowledge it. If they gave an ID, confirm receipt.
-4. The conversation must be LOGICALLY SEQUENTIAL — your response in turn N should naturally lead to what the caller says in turn N+1.
-5. Penguin AI moves FAST: acknowledge → verify → retrieve → resolve. Minimal back-and-forth.
-6. 1-2 sentences max per response. Professional, confident, warm.
-7. Think of it as: the caller's turns are already locked in — you are FILLING IN the AI's side of the conversation to make it coherent and sensible.
-8. End the call resolved and efficiently. No open loops.
-9. If the caller says something like a number or code, treat it as the answer to your PREVIOUS question and acknowledge it before asking the next thing.
+You must generate exactly ${totalResponses} responses:
+- INDEX 0: Opening greeting ONLY. Caller has NOT spoken yet. Greet professionally and invite them to state their reason for calling. e.g. "Thank you for calling. This is Penguin AI, your automated healthcare assistant. How can I assist you today?"
+- INDEX 1 through ${turns.length}: One direct response per caller turn, in EXACT order.
 
-Return ONLY a JSON array of strings — one response per caller turn, in order.
-Example format: ["Response to turn 1.", "Response to turn 2.", "Response to turn 3."]`;
+CRITICAL RULES FOR INDICES 1+:
+1. Read the caller's utterance for that turn CAREFULLY. Your response must DIRECTLY acknowledge what they JUST SAID.
+2. NEVER ask for information already provided in a prior turn. If caller gave their name → use it. If they gave a phone number → confirm and move on. If they gave an ID → acknowledge it.
+3. Each response must logically bridge to the caller's NEXT utterance.
+4. Penguin AI resolves efficiently: greet → identify caller → gather minimum needed info → retrieve data → confirm resolution.
+5. Max 1-2 sentences per response. Be warm, confident, and concise.
+6. The final response must close the call: confirm resolution, offer further assistance, say goodbye.
+
+Return ONLY a valid JSON array of exactly ${totalResponses} strings. No markdown, no extra text.
+Format: ["Opening greeting.", "Response to turn 1.", "Response to turn 2.", ..., "Closing response."]`;
 
     const userPrompt = `Call context:
 - Call type: ${callType}
@@ -49,15 +50,13 @@ Example format: ["Response to turn 1.", "Response to turn 2.", "Response to turn
 - Summary: ${summary}
 - Entities extracted: ${JSON.stringify(entities)}
 
-Here is the full caller sequence (in the exact order they spoke during the call):
+Caller utterances in exact order:
 ${conversationContext}
 
-Generate exactly ${turns.length} Penguin AI responses — one per turn — where each response:
-- DIRECTLY reacts to what the caller said in that specific turn
-- Makes logical sense given what was said before and what comes after
-- Keeps the call moving efficiently toward resolution
-
-Return as a JSON array of exactly ${turns.length} strings. Nothing else.`;
+Generate exactly ${totalResponses} responses (1 opening + ${turns.length} turn responses).
+Index 0 = greeting before caller speaks.
+Indices 1–${turns.length} = direct responses to each caller turn above.
+Return ONLY a JSON array of ${totalResponses} strings.`;
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -71,7 +70,7 @@ Return as a JSON array of exactly ${turns.length} strings. Nothing else.`;
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
         ],
-        temperature: 0.2,
+        temperature: 0.15,
       }),
     });
 
@@ -97,21 +96,24 @@ Return as a JSON array of exactly ${turns.length} strings. Nothing else.`;
       responses = JSON.parse(cleaned);
       if (!Array.isArray(responses)) throw new Error('Not an array');
     } catch {
-      // Fallback: try extracting quoted strings line by line
       const matches = cleaned.match(/"([^"\\]*(\\.[^"\\]*)*)"/g);
       responses = matches
         ? matches.map((m: string) => m.replace(/^"|"$/g, ''))
         : cleaned.split('\n').filter((l: string) => l.trim()).map((l: string) => l.replace(/^\d+\.\s*/, '').trim());
     }
 
-    // Pad to correct count if needed
-    while (responses.length < turns.length) {
-      responses.push("I've noted that, thank you. Let me pull up the details for you now.");
+    // Ensure we have exactly totalResponses entries
+    if (responses.length < 1 || !responses[0].toLowerCase().includes('thank') && !responses[0].toLowerCase().includes('calling') && !responses[0].toLowerCase().includes('assist')) {
+      // If no valid opening, prepend one
+      responses.unshift("Thank you for calling. This is Penguin AI, your automated healthcare assistant. How can I assist you today?");
     }
-    // Trim to correct count
-    responses = responses.slice(0, turns.length);
 
-    console.log(`Generated ${responses.length} aligned responses for ${turns.length} caller turns`);
+    while (responses.length < totalResponses) {
+      responses.push("I've noted that, thank you. Is there anything else I can assist you with?");
+    }
+    responses = responses.slice(0, totalResponses);
+
+    console.log(`Generated ${responses.length} responses (1 opening + ${turns.length} turn responses) for ${turns.length} caller turns`);
 
     return new Response(JSON.stringify({ responses }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
