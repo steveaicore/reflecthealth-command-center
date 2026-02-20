@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { User, Send, Sparkles } from "lucide-react";
+import { User, Send } from "lucide-react";
 import penguinLogo from "@/assets/penguin-logo.png";
 
 interface ChatMessage {
@@ -110,7 +110,7 @@ export function Five9ChatView() {
       {/* AI Suggestions */}
       <div className="col-span-4 overflow-y-auto five9-panel-bg p-3 space-y-3">
         <div className="flex items-center gap-1.5">
-          <Sparkles className="h-3.5 w-3.5 text-five9-accent" />
+          <img src={penguinLogo} alt="Penguin AI" className="h-4 w-4 object-contain" />
           <span className="text-[10px] font-semibold text-foreground">AI Chat Assist</span>
         </div>
         <div className="five9-card p-2.5 five9-active-border space-y-2">

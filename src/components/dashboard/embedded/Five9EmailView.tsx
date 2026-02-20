@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Mail, Bot, Send, AlertTriangle } from "lucide-react";
+import { Mail, Send, AlertTriangle } from "lucide-react";
+import penguinLogo from "@/assets/penguin-logo.png";
 
 interface Email {
   id: string;
@@ -108,7 +109,7 @@ export function Five9EmailView() {
       {/* AI Assist */}
       <div className="col-span-4 overflow-y-auto five9-panel-bg p-3">
         <div className="flex items-center gap-1.5 mb-3">
-          <Bot className="h-3.5 w-3.5 text-five9-accent" />
+          <img src={penguinLogo} alt="Penguin AI" className="h-4 w-4 object-contain" />
           <span className="text-[10px] font-semibold text-foreground">AI Email Assist</span>
         </div>
         {selectedEmail ? (
