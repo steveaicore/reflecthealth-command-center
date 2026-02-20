@@ -11,7 +11,7 @@ interface Five9HeaderProps {
   setActiveTab: (t: Five9Tab) => void;
 }
 
-export function Five9Header({ activeTab, setActiveTab }: Five9HeaderProps) {
+export function Five9Header({ activeTab, setActiveTab }: Five9HeaderProps) { // audio-engine-fix
   const { setDeploymentMode } = useDashboard();
   const { audioEnabled, setAudioEnabled } = useAudioEngine();
   const [elapsed, setElapsed] = useState(0);
