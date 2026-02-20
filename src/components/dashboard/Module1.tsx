@@ -4,7 +4,6 @@ import { MetricCard } from "./MetricCard";
 import { CallTicker, InsightCard } from "./LiveFeed";
 import { IdentityVerificationPanel } from "./IdentityVerificationPanel";
 import { EligibilityCoveragePanel } from "./EligibilityCoveragePanel";
-import { ClaimStatusPanel } from "./ClaimStatusPanel";
 import { Phone, Users, Zap, TrendingDown } from "lucide-react";
 
 export function Module1() {
@@ -46,7 +45,6 @@ export function Module1() {
       <div className="space-y-2">
         <IdentityVerificationPanel />
         <EligibilityCoveragePanel />
-        <ClaimStatusPanel />
       </div>
 
       <InsightCard>
