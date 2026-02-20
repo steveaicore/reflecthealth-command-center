@@ -4,6 +4,7 @@ import { fmtCurrency, fmtDecimal } from "@/lib/format";
 import { MetricCard } from "./MetricCard";
 import { InsightCard } from "./LiveFeed";
 import { CompetitiveIndex } from "./CompetitiveIndex";
+import { ConnectedSystemsPanel } from "./ConnectedSystemsPanel";
 import { TrendingUp, Clock, DollarSign, Building2, Zap } from "lucide-react";
 import { NetworkDetailModal, PARTNERS, SOLUTIONS } from "./NetworkDetailModal";
 
@@ -43,6 +44,9 @@ export function Module3() {
           icon={<DollarSign className="h-3.5 w-3.5" />}
         />
       </div>
+
+      {/* Connected Systems */}
+      <ConnectedSystemsPanel />
 
       {/* Network Partners - Clickable */}
       <div className="module-panel">

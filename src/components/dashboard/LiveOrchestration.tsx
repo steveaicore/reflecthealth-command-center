@@ -15,26 +15,26 @@ const TAB_CONFIG: Record<DashboardTab, {
   pipelineStages: string[];
 }> = {
   contact: {
-    title: "Live Orchestration Stream",
-    subtitle: "Member & Provider Interaction Automation",
+    title: "Intake & Identity Stream",
+    subtitle: "Identity Verification & Eligibility Automation",
     icon: <Phone className="h-3.5 w-3.5" />,
-    pipelineStages: ["Incoming", "Intent Classification", "Policy Validation", "System Query", "Response Generation", "Resolved"],
+    pipelineStages: ["Incoming", "Identity Verification", "Eligibility Lookup", "Coverage Check", "Response Generation", "Resolved"],
   },
   claims: {
-    title: "Live Claims Orchestration Stream",
+    title: "Claims & Coverage Operations Stream",
     subtitle: "Adjudication & Review Intelligence",
     icon: <FileText className="h-3.5 w-3.5" />,
     pipelineStages: ["Claim Intake", "Code Extraction", "Policy Mapping", "Fraud Check", "Adjudication", "Payment Decision"],
   },
   network: {
-    title: "Live Network Intelligence Stream",
+    title: "Network & Connectivity Stream",
     subtitle: "Contract & Ecosystem Optimization",
     icon: <Globe className="h-3.5 w-3.5" />,
     pipelineStages: ["Request", "Network Match", "Contract Optimization", "Coverage Validation", "Cost Calculation", "Outcome"],
   },
   roi: {
-    title: "Financial Orchestration Engine",
-    subtitle: "Financial Performance Orchestration",
+    title: "Financial Impact Engine",
+    subtitle: "Financial Performance Modeling",
     icon: <TrendingUp className="h-3.5 w-3.5" />,
     pipelineStages: ["Operational Event", "Financial Attribution", "Margin Impact", "ROI Calculation", "Forecast Update"],
   },

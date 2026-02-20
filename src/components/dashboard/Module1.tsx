@@ -2,6 +2,9 @@ import { useDashboard } from "@/contexts/DashboardContext";
 import { fmtCurrency, fmtDecimal, fmtNumber, fmtPct } from "@/lib/format";
 import { MetricCard } from "./MetricCard";
 import { CallTicker, InsightCard } from "./LiveFeed";
+import { IdentityVerificationPanel } from "./IdentityVerificationPanel";
+import { EligibilityCoveragePanel } from "./EligibilityCoveragePanel";
+import { ClaimStatusPanel } from "./ClaimStatusPanel";
 import { Phone, Users, Zap, TrendingDown } from "lucide-react";
 
 export function Module1() {
@@ -37,6 +40,13 @@ export function Module1() {
           sub={mode === "internal" ? "Pre-AI baseline" : "AI automation rate"}
           icon={mode === "internal" ? <TrendingDown className="h-3.5 w-3.5" /> : <Zap className="h-3.5 w-3.5" />}
         />
+      </div>
+
+      {/* Operational Realism Panels */}
+      <div className="space-y-2">
+        <IdentityVerificationPanel />
+        <EligibilityCoveragePanel />
+        <ClaimStatusPanel />
       </div>
 
       <InsightCard>

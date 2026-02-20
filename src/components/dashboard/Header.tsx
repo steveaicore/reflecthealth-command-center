@@ -15,10 +15,10 @@ const presetLabels: Record<VolumePreset, string> = {
 };
 
 const tabs: { id: DashboardTab; label: string; subtitle: string; icon: React.ReactNode }[] = [
-  { id: "contact", label: "Interaction Orchestration", subtitle: "Member & Provider Interaction Automation", icon: <Phone className="h-3.5 w-3.5" /> },
-  { id: "claims", label: "Claims Orchestration", subtitle: "Adjudication & Review Intelligence", icon: <FileText className="h-3.5 w-3.5" /> },
-  { id: "network", label: "Network Intelligence", subtitle: "Contract & Ecosystem Optimization", icon: <Globe className="h-3.5 w-3.5" /> },
-  { id: "roi", label: "Financial Command Center", subtitle: "Financial Performance Orchestration", icon: <TrendingUp className="h-3.5 w-3.5" /> },
+  { id: "contact", label: "Intake & Identity", subtitle: "Identity Verification & Eligibility", icon: <Phone className="h-3.5 w-3.5" /> },
+  { id: "claims", label: "Claims & Coverage Operations", subtitle: "Adjudication & Review Intelligence", icon: <FileText className="h-3.5 w-3.5" /> },
+  { id: "network", label: "Network & Connectivity", subtitle: "Contract & Ecosystem Optimization", icon: <Globe className="h-3.5 w-3.5" /> },
+  { id: "roi", label: "Financial Impact Simulator", subtitle: "Financial Performance Modeling", icon: <TrendingUp className="h-3.5 w-3.5" /> },
 ];
 
 function SyncIndicator() {
