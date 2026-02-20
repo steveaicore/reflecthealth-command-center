@@ -153,7 +153,7 @@ export function LiveCallSimulation() {
   const {
     audioEnabled, isLiveSimulation, setIsLiveSimulation,
     confidenceThreshold, playTTS, stopAudio, setCurrentCallOutcome,
-    isPlaying,
+    isPlaying, setLiveCallIntent,
   } = useAudioEngine();
 
   const [transcript, setTranscript] = useState<TranscriptLine[]>([]);
@@ -180,6 +180,7 @@ export function LiveCallSimulation() {
     const conf = Math.floor(lo + Math.random() * (hi - lo));
 
     setCurrentIntent(template.intent);
+    setLiveCallIntent(template.intent);
     setCallConfidence(conf);
     setCallStatus("incoming");
     setTranscript([]);

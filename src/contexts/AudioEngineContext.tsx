@@ -19,6 +19,8 @@ interface AudioEngineState {
   setConfidenceThreshold: (v: number) => void;
   currentCallOutcome: CallOutcome | null;
   setCurrentCallOutcome: (o: CallOutcome | null) => void;
+  liveCallIntent: string;
+  setLiveCallIntent: (v: string) => void;
 
   // Playback controls
   isMuted: boolean;
@@ -43,6 +45,7 @@ export function AudioEngineProvider({ children }: { children: React.ReactNode })
   const [isLiveSimulation, setIsLiveSimulation] = useState(false);
   const [confidenceThreshold, setConfidenceThreshold] = useState(85);
   const [currentCallOutcome, setCurrentCallOutcome] = useState<CallOutcome | null>(null);
+  const [liveCallIntent, setLiveCallIntent] = useState("");
   const [isMuted, setIsMuted] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -140,6 +143,7 @@ export function AudioEngineProvider({ children }: { children: React.ReactNode })
       isLiveSimulation, setIsLiveSimulation,
       confidenceThreshold, setConfidenceThreshold,
       currentCallOutcome, setCurrentCallOutcome,
+      liveCallIntent, setLiveCallIntent,
       isMuted, setIsMuted,
       playbackSpeed, setPlaybackSpeed,
       isPlaying, currentSpeaker, audioMode,
