@@ -162,7 +162,7 @@ function Pipeline({ stages, pipeline }: { stages: string[]; pipeline: { activeSt
     <div className="flex flex-col gap-2">
       <span className="text-[9px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">AI Orchestration Flow</span>
       <div className="flow-bg rounded-lg p-3 border border-border relative">
-        <div className="flex items-center gap-1 overflow-x-auto">
+        <div className="flex items-center gap-1 flex-wrap">
           {stages.map((stage, i) => (
             <div key={stage} className="flex items-center gap-1 shrink-0">
               <div className={`px-2 py-1 rounded text-[9px] font-medium transition-all duration-300 ${
