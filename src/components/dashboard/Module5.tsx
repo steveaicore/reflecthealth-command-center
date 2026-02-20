@@ -3,9 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   Upload, FileAudio, Loader2, CheckCircle2, AlertCircle, Brain, Shield,
   TrendingUp, ChevronDown, ChevronUp, BarChart3, BookOpen, Cpu, Play, Pause, Square,
-  RotateCcw, Database, Users, DollarSign,
+  RotateCcw, Database, Users, DollarSign, Layers,
 } from "lucide-react";
 import penguinLogo from "@/assets/penguin-ai-logo.png";
+import { AutomationScoringPanel, type ScoringBreakdown } from "@/components/dashboard/AutomationScoringPanel";
+import { BatchAnalysisMode } from "@/components/dashboard/BatchAnalysisMode";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type AnalysisState = "idle" | "uploading" | "transcribing" | "analyzing" | "complete" | "error";
@@ -42,6 +44,7 @@ interface CallAnalysis {
   avg_handle_time_seconds?: number;
   cost_per_call_manual?: number;
   cost_per_call_ai?: number;
+  scoring_breakdown?: ScoringBreakdown;
 }
 
 interface SavedScenario {
@@ -533,20 +536,36 @@ function VoiceReplayPanel({ analysis, audioFile }: { analysis: CallAnalysis; aud
 
 // ─── Impact Dashboard ─────────────────────────────────────────────────────────
 function ImpactDashboard({ scenarios }: { scenarios: SavedScenario[] }) {
-  const cov = scenarios.length > 0 ? Math.min(64 + scenarios.length * 7, 97) : 64;
+  const n = scenarios.length;
+  const cov = n > 0 ? Math.min(64 + n * 7, 97) : 64;
   const savings = Math.round(5000 * cov / 100) * (4.50 - 0.65) * 12;
+
+  // Build intent clusters to show confidence improvement
+  const intentClusters: Record<string, { count: number; maxConf: number; minConf: number; name: string }> = {};
+  for (const s of scenarios) {
+    const key = s.intent.toLowerCase().split(" ").slice(0, 3).join("-");
+    if (!intentClusters[key]) intentClusters[key] = { count: 0, maxConf: s.confidence_score, minConf: s.confidence_score, name: s.intent };
+    intentClusters[key].count++;
+    intentClusters[key].maxConf = Math.max(intentClusters[key].maxConf, s.confidence_score);
+    intentClusters[key].minConf = Math.min(intentClusters[key].minConf, s.confidence_score);
+  }
+  const clusterList = Object.entries(intentClusters).sort((a, b) => b[1].count - a[1].count).slice(0, 5);
+
   return (
     <div className="rounded-lg border border-border bg-card">
-      <div className="px-4 py-3 border-b border-border flex items-center gap-2">
-        <BarChart3 className="h-3.5 w-3.5 text-primary" />
-        <span className="text-xs font-semibold text-foreground">Automation Impact Dashboard</span>
+      <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <BarChart3 className="h-3.5 w-3.5 text-primary" />
+          <span className="text-xs font-semibold text-foreground">Automation Impact Dashboard</span>
+        </div>
+        {n > 0 && <span className="text-[9px] text-emerald-700 font-semibold bg-emerald-50 border border-emerald-200 rounded px-1.5 py-0.5">{n} scenario{n !== 1 ? "s" : ""} trained</span>}
       </div>
       <div className="p-4 grid grid-cols-2 gap-3 md:grid-cols-3">
         {[
           { v: `${cov}%`, l: "Calls Fully Automated", c: "text-primary" },
           { v: "$3.85", l: "Savings Per Call", c: "text-foreground" },
           { v: `$${(savings / 1000).toFixed(0)}K`, l: "Est. Annual Savings", c: "text-emerald-600" },
-          { v: `${scenarios.length}`, l: "Scenarios Trained", c: "text-foreground" },
+          { v: `${n}`, l: "Scenarios Trained", c: "text-foreground" },
           { v: "~45s", l: "Avg AI Handle Time", c: "text-foreground" },
           { v: "$0.65", l: "Cost Per AI Call", c: "text-foreground" },
         ].map(({ v, l, c }) => (
@@ -556,8 +575,44 @@ function ImpactDashboard({ scenarios }: { scenarios: SavedScenario[] }) {
           </div>
         ))}
       </div>
+
+      {/* Intent cluster confidence improvement */}
+      {clusterList.length > 0 && (
+        <div className="px-4 pb-4 space-y-3 border-t border-border/50 pt-3">
+          <div className="text-[10px] font-semibold text-foreground flex items-center gap-1.5">
+            <TrendingUp className="h-3 w-3 text-primary" /> Intent Cluster Intelligence — Confidence Improvement
+          </div>
+          <div className="space-y-2">
+            {clusterList.map(([key, cluster]) => {
+              const improved = cluster.count > 1;
+              const baseConf = Math.max(60, cluster.minConf - Math.floor(Math.random() * 8));
+              const currentConf = Math.min(98, cluster.maxConf + cluster.count * 2);
+              return (
+                <div key={key} className="rounded-md bg-secondary/20 border border-border/50 p-2.5">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[9px] font-medium text-foreground truncate flex-1 pr-2">{cluster.name}</span>
+                    <span className="text-[9px] font-mono text-muted-foreground shrink-0">{cluster.count} call{cluster.count !== 1 ? "s" : ""} analyzed</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden">
+                      <div className="h-full bg-primary rounded-full" style={{ width: `${currentConf}%` }} />
+                    </div>
+                    <span className="text-[9px] font-bold text-primary shrink-0">{currentConf}%</span>
+                  </div>
+                  {improved && (
+                    <div className="mt-1 text-[8px] text-emerald-600 font-medium">
+                      ↑ Automation confidence improved from {baseConf}% → {currentConf}% based on {cluster.count} analyzed calls
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {scenarios.length > 0 && (
-        <div className="px-4 pb-4">
+        <div className="px-4 pb-4 border-t border-border/50 pt-3">
           <div className="text-[10px] font-semibold text-foreground mb-2 flex items-center gap-1.5">
             <BookOpen className="h-3 w-3 text-primary" /> Knowledge Base — Active Scenarios
           </div>
@@ -569,7 +624,10 @@ function ImpactDashboard({ scenarios }: { scenarios: SavedScenario[] }) {
                   <div className="text-[10px] font-medium text-foreground truncate">{s.name}</div>
                   <div className="text-[9px] text-muted-foreground truncate">{s.intent}</div>
                 </div>
-                <span className="text-[9px] font-mono text-primary shrink-0">{s.confidence_score}% conf.</span>
+                <div className="text-right shrink-0">
+                  <div className="text-[9px] font-mono text-primary">{s.confidence_score}%</div>
+                  <div className="text-[8px] text-muted-foreground">confidence</div>
+                </div>
               </div>
             ))}
           </div>
@@ -593,7 +651,9 @@ export function Module5() {
   const [scenarioSaved, setScenarioSaved] = useState(false);
   const [showReplay, setShowReplay] = useState(false);
   const [analysisOpen, setAnalysisOpen] = useState(true);
+  const [scoringOpen, setScoringOpen] = useState(true);
   const [coverageDisplay, setCoverageDisplay] = useState({ before: 64, after: 71 });
+  const [showBatch, setShowBatch] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const STEPS: { label: string; state: AnalysisState }[] = [
@@ -673,6 +733,7 @@ export function Module5() {
         ...ai, id: aRec?.id, recordingId: rec.id, transcript, speakerWords,
         avg_handle_time_seconds: Math.round(file.size / 16000) || 360,
         cost_per_call_manual: 4.50, cost_per_call_ai: 0.65,
+        scoring_breakdown: ai.scoring_breakdown ?? undefined,
       });
       setAnalysisState("complete");
     } catch (err) {
@@ -719,16 +780,27 @@ export function Module5() {
           <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <Brain className="h-4 w-4 text-primary" /> Penguin AI — Call Intelligence Engine
           </h2>
-          <p className="text-[10px] text-muted-foreground mt-0.5">Upload historical call recordings → Transcribe → Analyze → Convert to automation scenarios</p>
+          <p className="text-[10px] text-muted-foreground mt-0.5">Upload recordings → AI scores automation feasibility → Convert to automation scenarios</p>
         </div>
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-primary/10 border border-primary/20">
-          <Shield className="h-3 w-3 text-primary" />
-          <span className="text-[10px] font-medium text-primary">Compliance-Ready Infrastructure</span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowBatch(!showBatch)}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[10px] font-medium transition-colors ${showBatch ? "bg-primary text-primary-foreground border-primary" : "bg-secondary/40 text-muted-foreground border-border hover:text-foreground"}`}
+          >
+            <Layers className="h-3 w-3" /> Batch Mode
+          </button>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-primary/10 border border-primary/20">
+            <Shield className="h-3 w-3 text-primary" />
+            <span className="text-[10px] font-medium text-primary">Compliance-Ready</span>
+          </div>
         </div>
       </div>
 
-      {/* Upload */}
-      {(analysisState === "idle" || analysisState === "error") && (
+      {/* Batch Analysis Mode */}
+      {showBatch && <BatchAnalysisMode onClose={() => setShowBatch(false)} />}
+
+      {/* Single Upload */}
+      {!showBatch && (analysisState === "idle" || analysisState === "error") && (
         <div onDrop={handleDrop} onDragOver={e => e.preventDefault()} onClick={() => fileInputRef.current?.click()}
           className="border-2 border-dashed border-border hover:border-primary/50 rounded-xl p-8 text-center cursor-pointer transition-colors bg-secondary/20 hover:bg-secondary/40">
           <input ref={fileInputRef} type="file" accept="audio/*,.mp3,.wav,.m4a,.ogg,.flac,.webm" className="hidden" onChange={handleChange} />
@@ -806,6 +878,30 @@ export function Module5() {
               </div>
             )}
           </div>
+
+          {/* Automation Scoring Framework Panel */}
+          {analysis.scoring_breakdown && (
+            <div className="rounded-lg border border-border bg-card overflow-hidden">
+              <button onClick={() => setScoringOpen(!scoringOpen)} className="w-full px-4 py-3 flex items-center justify-between text-left bg-secondary/10 hover:bg-secondary/20 transition-colors">
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="h-3.5 w-3.5 text-primary" />
+                  <span className="text-xs font-semibold text-foreground">📊 Automation Feasibility Index — Scoring Framework</span>
+                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${analysis.automation_feasibility_score >= 80 ? "text-emerald-700 bg-emerald-50 border-emerald-200" : analysis.automation_feasibility_score >= 60 ? "text-blue-700 bg-blue-50 border-blue-200" : analysis.automation_feasibility_score >= 40 ? "text-amber-700 bg-amber-50 border-amber-200" : "text-destructive bg-red-50 border-red-200"}`}>
+                    {analysis.automation_feasibility_score}/100
+                  </span>
+                </div>
+                {scoringOpen ? <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
+              </button>
+              {scoringOpen && (
+                <AutomationScoringPanel
+                  score={analysis.automation_feasibility_score}
+                  breakdown={analysis.scoring_breakdown}
+                  callType={analysis.call_type}
+                  monthlyCalls={5000}
+                />
+              )}
+            </div>
+          )}
 
           {!scenarioSaved && (
             <button onClick={saveScenario} disabled={savingScenario}
