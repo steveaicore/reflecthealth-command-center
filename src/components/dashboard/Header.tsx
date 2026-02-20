@@ -113,20 +113,25 @@ export function Header() {
           <ScenarioSelector />
 
           {/* Volume Presets */}
-          <div className="flex items-center bg-secondary rounded-md p-0.5 gap-0.5">
-            {(["low", "medium", "high"] as VolumePreset[]).map((p) => (
-              <button
-                key={p}
-                onClick={() => setPreset(p)}
-                className={`px-2.5 py-1 text-[10px] font-medium rounded transition-all ${
-                  preset === p
-                    ? "reflect-gradient text-white"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {presetLabels[p]}
-              </button>
-            ))}
+          <div className="flex items-center gap-1.5">
+            <div className="flex items-center bg-secondary rounded-md p-0.5 gap-0.5">
+              {(["low", "medium", "high"] as VolumePreset[]).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setPreset(p)}
+                  className={`px-2.5 py-1 text-[10px] font-medium rounded transition-all ${
+                    preset === p
+                      ? "reflect-gradient text-white"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {presetLabels[p]}
+                </button>
+              ))}
+            </div>
+            {preset === "medium" && (
+              <span className="text-[9px] text-muted-foreground italic">Baseline Mode</span>
+            )}
           </div>
 
           {/* Mode Toggle */}

@@ -239,8 +239,8 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
 
       const isDeflected = event.status === "ai-routed" || event.status === "resolved";
       if (isDeflected) {
-        const minutesSaved = callParams.handleTimeMin * callParams.aiProcessSavingsPct;
-        const costSaved = (callParams.handleTimeMin / 60) * callParams.agentCostHr * callParams.aiProcessSavingsPct;
+        const minutesSaved = callParams.handleTimeMin * 0.75; // proportion of time saved per deflected call
+        const costSaved = (callParams.handleTimeMin / 60) * callParams.agentCostHr * 0.75;
         setCounters(prev => ({
           callsDeflected: prev.callsDeflected + 1,
           manualMinutesSaved: prev.manualMinutesSaved + minutesSaved,
@@ -256,13 +256,13 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
         claimsEvt.status === "auto" ? "Auto-Adjudicated" : claimsEvt.status === "exception" ? "Exception" : "Manual Review");
 
       if (claimsEvt.manualReviewAvoided) {
-        const claimCostSaved = (claimsEvt.adjudicationTimeSec / 60) * 28;
+        const claimCostSaved = (claimsEvt.adjudicationTimeSec / 60) * 50; // $50/hr FTE cost from source model
         setClaimsCounters(prev => ({
           ...prev,
           autoAdjudicated: prev.autoAdjudicated + 1,
           manualReviewsAvoided: prev.manualReviewsAvoided + 1,
           costAvoided: prev.costAvoided + claimCostSaved,
-          fteImpact: (prev.autoAdjudicated + 1) * 12 / (8 * 60),
+          fteImpact: (prev.autoAdjudicated + 1) * 15 / (8 * 60), // 15 min per claim from source model
         }));
       }
 
@@ -283,11 +283,11 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
           const roiEvt = generateROIEvent(totalSavings);
           setRoiEvents(prev2 => [roiEvt, ...prev2].slice(0, 50));
           animatePipeline(setRoiPipeline, 96, 0.5, "Attributed");
-          const annualized = totalSavings * 365;
+          const annualized = totalSavings * 52; // weekly extrapolation, more conservative
           return {
             ...prev,
             totalAnnualizedSavings: annualized,
-            roiMultiple: annualized > 0 ? parseFloat((annualized / 180000).toFixed(1)) : 0,
+            roiMultiple: annualized > 0 ? parseFloat((annualized / 350000).toFixed(1)) : 0,
             marginExpansionPct: parseFloat((annualized / 5000000 * 100).toFixed(2)),
           };
         });
