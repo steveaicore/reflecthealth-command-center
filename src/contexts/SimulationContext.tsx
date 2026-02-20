@@ -93,12 +93,33 @@ interface SimulationState {
 
 const SimulationContext = createContext<SimulationState | null>(null);
 
-const CALLER_TYPES: CallerType[] = ["Provider", "Member", "Broker"];
-const REASONS = [
-  "Claims Status", "ID Card Request", "PA Status", "Eligibility Inquiry",
-  "Benefits Verification", "Referral Check", "COB Verification", "Claim Appeal"
+// Weighted caller type: 75% Provider, 25% Member, ~2% Broker (replaces Member slot occasionally)
+function weightedCallerType(): CallerType {
+  const r = Math.random();
+  if (r < 0.75) return "Provider";
+  if (r < 0.98) return "Member";
+  return "Broker";
+}
+
+const PROVIDER_REASONS = [
+  "Benefits Verification", "Eligibility Inquiry", "Claim Status",
+  "Prior Authorization Verification", "Coordination of Benefits Verification",
+  "Referral Validation", "Appeal Status Inquiry", "Timely Filing Question",
+  "Claim Reprocessing Request",
 ];
-const PAYERS = ["BCBS", "Aetna", "UHC", "Cigna", "Humana", "Anthem", "Kaiser"];
+const MEMBER_REASONS = [
+  "Claims Status", "ID Card Request", "Deductible / OOP Balance Inquiry",
+  "Pharmacy Coverage Question",
+];
+const BROKER_REASONS = ["Group Eligibility File Correction"];
+
+function reasonForType(type: CallerType): string {
+  if (type === "Provider") return PROVIDER_REASONS[Math.floor(Math.random() * PROVIDER_REASONS.length)];
+  if (type === "Member") return MEMBER_REASONS[Math.floor(Math.random() * MEMBER_REASONS.length)];
+  return BROKER_REASONS[0];
+}
+
+const PAYERS = ["BCBS", "Aetna", "UHC", "Cigna", "Anthem"];
 
 const CLAIMS_TYPES = [
   "Claim Received", "Claim Auto-Adjudicated", "Claim Flagged for Manual Review",
@@ -110,7 +131,7 @@ const NETWORK_TYPES = [
   "Network Routing Optimization", "Out-of-Network Redirected", "Contract Rate Applied",
   "Specialty Network Match", "Marketplace Solution Activated", "Stop-Loss Triggered"
 ];
-const NETWORKS = ["BlueCross PPO", "Aetna HMO", "UHC Choice Plus", "Cigna OAP", "Humana Gold"];
+const NETWORKS = ["BlueCross PPO", "Aetna HMO", "UHC Choice Plus", "Cigna OAP", "Anthem EPO"];
 const PLAN_IMPACTS = ["Reduced PMPM", "SLA Improved", "Cost Contained", "Coverage Expanded"];
 const MEMBER_IMPACTS = ["No Disruption", "Minimal Change", "Improved Access", "Lower OOP"];
 
@@ -120,8 +141,8 @@ const ROI_TYPES = [
 ];
 
 function generateEvent(eligiblePct: number, accuracyPct: number): SimEvent {
-  const callerType = CALLER_TYPES[Math.floor(Math.random() * CALLER_TYPES.length)];
-  const reason = REASONS[Math.floor(Math.random() * REASONS.length)];
+  const callerType = weightedCallerType();
+  const reason = reasonForType(callerType);
   const payer = PAYERS[Math.floor(Math.random() * PAYERS.length)];
   const aiResolved = Math.random() < (eligiblePct * accuracyPct);
   const confidence = aiResolved ? 85 + Math.random() * 13 : 40 + Math.random() * 30;
