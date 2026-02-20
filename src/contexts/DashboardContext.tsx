@@ -10,7 +10,7 @@ import {
 } from "@/lib/roi-calculations";
 
 export type ViewMode = "internal" | "tpa-demo";
-export type DashboardTab = "contact" | "claims" | "network" | "roi";
+export type DashboardTab = "contact" | "claims" | "network" | "roi" | "intelligence";
 export type DeploymentMode = "white-label" | "embedded";
 
 interface DashboardState {

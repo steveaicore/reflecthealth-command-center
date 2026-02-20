@@ -38,6 +38,12 @@ const TAB_CONFIG: Record<DashboardTab, {
     icon: <TrendingUp className="h-3.5 w-3.5" />,
     pipelineStages: ["Operational Event", "Financial Attribution", "Margin Impact", "ROI Calculation", "Forecast Update"],
   },
+  intelligence: {
+    title: "Call Intelligence Engine",
+    subtitle: "Upload → Transcribe → Analyze → Automate",
+    icon: <Zap className="h-3.5 w-3.5" />,
+    pipelineStages: ["Audio Upload", "STT Transcription", "Intent Detection", "AI Analysis", "Scenario Creation", "KB Trained"],
+  },
 };
 
 /* ─── Contact Feed ─── */
@@ -266,6 +272,7 @@ export function LiveOrchestration() {
     claims: <ClaimsFeed />,
     network: <NetworkFeed />,
     roi: <ROIFeed />,
+    intelligence: <ContactFeed />,
   };
 
   const pipelineMap: Record<DashboardTab, { activeStage: number; confidence: number; resolutionTime: number; outcome: string }> = {
@@ -273,6 +280,7 @@ export function LiveOrchestration() {
     claims: sim.claimsPipeline,
     network: sim.networkPipeline,
     roi: sim.roiPipeline,
+    intelligence: sim.pipeline,
   };
 
   const metricsMap: Record<DashboardTab, React.ReactNode> = {
@@ -280,6 +288,7 @@ export function LiveOrchestration() {
     claims: <ClaimsMetrics />,
     network: <NetworkMetrics />,
     roi: <ROIMetrics />,
+    intelligence: <ContactMetrics />,
   };
 
   return (

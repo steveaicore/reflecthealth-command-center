@@ -11,6 +11,7 @@ import { Module3 } from "@/components/dashboard/Module3";
 import { ExecutiveROI } from "@/components/dashboard/ExecutiveROI";
 import { LiveOrchestration } from "@/components/dashboard/LiveOrchestration";
 import { DashboardFooter } from "@/components/dashboard/Footer";
+import { Module5 } from "@/components/dashboard/Module5";
 import { Five9Layout } from "@/components/dashboard/embedded/Five9Layout";
 import { TransitionOverlay } from "@/components/dashboard/embedded/TransitionOverlay";
 
@@ -43,6 +44,7 @@ function DashboardContent() {
                 {activeTab === "claims" && <Module2 />}
                 {activeTab === "network" && <Module3 />}
                 {activeTab === "roi" && <ExecutiveROI />}
+                {activeTab === "intelligence" && <Module5 />}
               </main>
               <KPISidebar />
             </div>

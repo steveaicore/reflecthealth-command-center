@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useDashboard, type DashboardTab, type DeploymentMode } from "@/contexts/DashboardContext";
-import { SlidersHorizontal, Shield, RefreshCw, Phone, FileText, Globe, TrendingUp, Play, Monitor, Plug, Info } from "lucide-react";
+import { SlidersHorizontal, Shield, RefreshCw, Phone, FileText, Globe, TrendingUp, Play, Monitor, Plug, Info, Brain } from "lucide-react";
 import { type VolumePreset } from "@/lib/roi-calculations";
 import { ScenarioSelector } from "./ScenarioSelector";
 import { DeploymentComparison } from "./embedded/DeploymentComparison";
@@ -19,6 +19,7 @@ const tabs: { id: DashboardTab; label: string; subtitle: string; icon: React.Rea
   { id: "claims", label: "Claims & Coverage Operations", subtitle: "Adjudication & Review Intelligence", icon: <FileText className="h-3.5 w-3.5" /> },
   { id: "network", label: "Network & Connectivity", subtitle: "Contract & Ecosystem Optimization", icon: <Globe className="h-3.5 w-3.5" /> },
   { id: "roi", label: "Financial Impact Simulator", subtitle: "Financial Performance Modeling", icon: <TrendingUp className="h-3.5 w-3.5" /> },
+  { id: "intelligence", label: "Call Intelligence", subtitle: "Upload & Automate Call Recordings", icon: <Brain className="h-3.5 w-3.5" /> },
 ];
 
 function SyncIndicator() {
