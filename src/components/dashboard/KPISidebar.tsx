@@ -6,7 +6,7 @@ import { ExportSummary } from "./ExportSummary";
 import { Download, TrendingUp, Users, DollarSign, Clock, Zap } from "lucide-react";
 
 export function KPISidebar() {
-  const { results, mode } = useDashboard();
+  const { results, mode, platformParams } = useDashboard();
   const { combined, callCenter, claims } = results;
   const [exportOpen, setExportOpen] = useState(false);
 
@@ -56,6 +56,14 @@ export function KPISidebar() {
       icon: <Zap className="h-3 w-3" />,
     },
   ];
+
+  kpis.push({
+    label: "Platform Investment",
+    value: platformParams.annualPlatformCost,
+    formatter: fmtCurrency,
+    icon: <DollarSign className="h-3 w-3" />,
+    highlight: false,
+  });
 
   if (mode === "internal") {
     kpis.push(

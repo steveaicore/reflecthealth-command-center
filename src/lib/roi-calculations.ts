@@ -24,7 +24,6 @@ export interface ROIResults {
   callCenter: {
     annualManualCost: number;
     annualSavings: number;
-    aiCost: number;
     fteSaved: number;
     annualHoursSaved: number;
   };
@@ -57,7 +56,6 @@ export function calculateROI(
     call.eligiblePct *
     call.accuracyPct *
     call.aiProcessSavingsPct;
-  const callAiCost = callAnnualManualCost - callAnnualSavings;
   const callAnnualHoursSaved = callAnnualSavings / call.agentCostHr;
   const callFteSaved = callAnnualHoursSaved / 2080;
 
@@ -81,7 +79,6 @@ export function calculateROI(
     callCenter: {
       annualManualCost: callAnnualManualCost,
       annualSavings: callAnnualSavings,
-      aiCost: callAiCost,
       fteSaved: callFteSaved,
       annualHoursSaved: callAnnualHoursSaved,
     },

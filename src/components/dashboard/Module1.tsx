@@ -31,22 +31,12 @@ export function Module1() {
           trend="positive"
           icon={<Users className="h-3.5 w-3.5" />}
         />
-        {mode === "internal" ? (
-          <MetricCard
-            label="Annual Manual Cost"
-            value={fmtCurrency(callCenter.annualManualCost)}
-            sub={`AI Cost: ${fmtCurrency(callCenter.aiCost)}`}
-            icon={<TrendingDown className="h-3.5 w-3.5" />}
-          />
-        ) : (
-          <MetricCard
-            label="Efficiency Gain"
-            value={fmtPct(callParams.aiProcessSavingsPct)}
-            sub="AI automation rate"
-            trend="positive"
-            icon={<Zap className="h-3.5 w-3.5" />}
-          />
-        )}
+        <MetricCard
+          label={mode === "internal" ? "Annual Manual Cost" : "Efficiency Gain"}
+          value={mode === "internal" ? fmtCurrency(callCenter.annualManualCost) : fmtPct(callParams.aiProcessSavingsPct)}
+          sub={mode === "internal" ? "Pre-AI baseline" : "AI automation rate"}
+          icon={mode === "internal" ? <TrendingDown className="h-3.5 w-3.5" /> : <Zap className="h-3.5 w-3.5" />}
+        />
       </div>
 
       <InsightCard>

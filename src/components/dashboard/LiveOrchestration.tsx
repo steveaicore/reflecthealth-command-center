@@ -223,13 +223,14 @@ function NetworkMetrics() {
 }
 
 function ROIMetrics() {
-  const { roiCounters } = useSimulation();
+  const { results, platformParams } = useDashboard();
+  const { combined, callCenter, claims } = results;
   const items = [
-    { label: "Annualized Savings", value: roiCounters.totalAnnualizedSavings, formatter: fmtCurrency, icon: <DollarSign className="h-3 w-3" /> },
-    { label: "ROI Multiple", value: roiCounters.roiMultiple, formatter: (n: number) => `${fmtDecimal(n, 1)}×`, icon: <TrendingUp className="h-3 w-3" /> },
-    { label: "Payback Months", value: roiCounters.paybackMonths, formatter: (n: number) => fmtDecimal(n, 1), icon: <Zap className="h-3 w-3" /> },
-    { label: "Productivity ↑", value: roiCounters.productivityLiftPct, formatter: (n: number) => `${fmtDecimal(n, 0)}%`, icon: <Users className="h-3 w-3" /> },
-    { label: "Margin Expansion", value: roiCounters.marginExpansionPct, formatter: (n: number) => `${fmtDecimal(n, 2)}%`, icon: <TrendingUp className="h-3 w-3" /> },
+    { label: "Total Savings", value: combined.totalAnnualSavings, formatter: fmtCurrency, icon: <DollarSign className="h-3 w-3" /> },
+    { label: "ROI Multiple", value: combined.roi, formatter: (n: number) => `${fmtDecimal(n, 1)}×`, icon: <TrendingUp className="h-3 w-3" /> },
+    { label: "Payback", value: combined.paybackMonths, formatter: (n: number) => `${fmtDecimal(n, 1)} mo`, icon: <Zap className="h-3 w-3" /> },
+    { label: "FTE (Calls)", value: callCenter.fteSaved, formatter: (n: number) => fmtDecimal(n, 1), icon: <Users className="h-3 w-3" /> },
+    { label: "FTE (Claims)", value: claims.fteSaved, formatter: (n: number) => fmtDecimal(n, 1), icon: <Users className="h-3 w-3" /> },
   ];
   return <MetricsGrid items={items} />;
 }
