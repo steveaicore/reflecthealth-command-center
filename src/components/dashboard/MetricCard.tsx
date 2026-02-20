@@ -22,8 +22,9 @@ export function MetricCard({ label, value, sub, icon, trend }: MetricCardProps) 
         <span className="metric-label">{label}</span>
         {icon && <span className="text-muted-foreground">{icon}</span>}
       </div>
-      <span className={`metric-value ${trendClass}`}>{value}</span>
-      {sub && <span className="text-[10px] text-muted-foreground">{sub}</span>}
+      <span className={`type-display font-mono ${trendClass}`}>{value}</span>
+      {sub && <span className="type-micro text-muted-foreground mt-0.5">{sub}</span>}
     </div>
   );
 }
+

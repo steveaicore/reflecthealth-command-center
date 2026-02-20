@@ -62,23 +62,23 @@ export function Five9AIPanel() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
           <img src={penguinAiLogo} alt="Penguin AI" className="h-3.5" />
-          <span className="text-[10px] font-semibold text-foreground">Penguin AI Orchestration</span>
+          <span className="type-h3 text-foreground">Penguin AI Orchestration</span>
         </div>
-        <span className="text-[8px] text-five9-muted">Powered by Penguin AI</span>
+        <span className="type-micro text-five9-muted">Powered by Penguin AI</span>
       </div>
 
       {/* Pipeline */}
       <div className="five9-card p-2.5 space-y-2">
         <div className="flex items-center gap-1.5">
           <img src={penguinLogo} alt="Penguin AI" className="h-3 w-3 object-contain" />
-          <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-five9-muted">
+          <span className="type-micro uppercase tracking-[0.12em] text-five9-muted">
             Processing Pipeline
           </span>
         </div>
         <div className="flex items-center gap-1">
           {PIPELINE_STAGES.map((stage, i) => (
             <div key={stage.label} className="flex items-center gap-1">
-              <div className={`flex items-center gap-1 px-2 py-1 rounded text-[9px] font-medium transition-all duration-300 ${
+              <div className={`flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium transition-all duration-300 ${
                 i <= Math.min(pipeline.activeStage, 3)
                   ? "five9-accent-bg text-white"
                   : "bg-secondary text-five9-muted"
@@ -102,9 +102,9 @@ export function Five9AIPanel() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1">
             <img src={penguinLogo} alt="Penguin AI" className="h-3 w-3 object-contain" />
-            <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-five9-muted">Confidence</span>
+            <span className="type-micro uppercase tracking-[0.12em] text-five9-muted">Confidence</span>
           </div>
-          <span className={`text-sm font-bold font-mono ${
+          <span className={`type-confidence ${
             pipeline.confidence > callParams.accuracyPct * 100 ? "text-emerald-600" : "text-amber-600"
           }`}>
             {pipeline.confidence}%
@@ -123,11 +123,11 @@ export function Five9AIPanel() {
         <div className="five9-card p-2.5 space-y-2 five9-active-border">
           <div className="flex items-center gap-1.5">
             <img src={penguinLogo} alt="Penguin AI" className="h-4 w-4 object-contain" />
-            <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-five9-muted">
+            <span className="type-micro uppercase tracking-[0.12em] text-five9-muted">
               Recommended Response
             </span>
           </div>
-          <p className="text-[11px] text-foreground leading-relaxed">{suggestedResponse}</p>
+          <p className="type-body-lg text-foreground" style={{ lineHeight: 1.6 }}>{suggestedResponse}</p>
         </div>
       )}
 
@@ -138,19 +138,19 @@ export function Five9AIPanel() {
       >
         <div className="flex items-center gap-1.5">
           <img src={penguinLogo} alt="Penguin AI" className="h-3 w-3 object-contain" />
-          <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-five9-muted">
+          <span className="type-micro uppercase tracking-[0.12em] text-five9-muted">
             Real-time Compliance
           </span>
         </div>
         <div className="space-y-1">
           {complianceFlags.map((flag) => (
-            <div key={flag.label} className="flex items-center gap-1.5 text-[10px]">
+            <div key={flag.label} className="flex items-center gap-1.5">
               {flag.ok ? (
                 <div className="w-2 h-2 rounded-full bg-emerald-500" />
               ) : (
                 <AlertCircle className="h-3 w-3 text-amber-500" />
               )}
-              <span className={flag.ok ? "text-foreground" : "text-amber-600"}>{flag.label}</span>
+              <span className={`type-body ${flag.ok ? "text-foreground" : "text-amber-600"}`}>{flag.label}</span>
             </div>
           ))}
         </div>
@@ -159,11 +159,11 @@ export function Five9AIPanel() {
       {/* Escalation Detection */}
       {activeEvent && pipeline.outcome === "Escalated" && (
         <div className="five9-card p-2.5 border-amber-500/30 bg-amber-50 space-y-1">
-          <div className="flex items-center gap-1.5 text-[10px] font-semibold text-amber-700">
+          <div className="flex items-center gap-1.5 type-micro font-semibold text-amber-700">
             <AlertCircle className="h-3 w-3" />
             Escalation Detected
           </div>
-          <p className="text-[10px] text-amber-600">
+          <p className="type-body text-amber-600">
             Confidence below threshold. Routing to senior agent with full context transfer.
           </p>
         </div>

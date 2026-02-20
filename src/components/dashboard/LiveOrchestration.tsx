@@ -60,20 +60,20 @@ function ContactFeed() {
   };
 
   return (
-    <div className="flex flex-col gap-1 overflow-hidden max-h-[200px]">
-      <span className="text-[9px] font-semibold uppercase tracking-[0.15em] text-muted-foreground section-header-accent mb-1">Live Event Feed</span>
+    <div className="flex flex-col gap-1.5 overflow-hidden max-h-[200px]">
+      <span className="type-micro uppercase tracking-[0.15em] text-muted-foreground section-header-accent mb-1">Live Event Feed</span>
       {events.slice(0, 6).map((evt) => {
         const status = STATUS_CONFIG[evt.status];
         return (
           <button key={evt.id} onClick={() => setSelectedEvent(evt)}
-            className="feed-item-enter flex items-center justify-between gap-2 px-2.5 py-1.5 rounded border border-border bg-card hover:border-primary/30 transition-colors text-left w-full">
+            className="feed-item-enter flex items-center justify-between gap-2 px-2.5 py-2 rounded border border-border bg-card hover:border-primary/30 transition-colors text-left w-full">
             <div className="flex items-center gap-2 min-w-0">
               <Phone className="h-3 w-3 text-primary shrink-0" />
-              <span className="text-[10px] text-foreground truncate">
+              <span className="type-body-lg font-medium text-foreground truncate" style={{ fontSize: "13px" }}>
                 <span className="text-muted-foreground">Incoming:</span> {evt.callerType} — {evt.reason} — {evt.payer}
               </span>
             </div>
-            <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full shrink-0 ${status.className}`}>{status.label}</span>
+            <span className={`type-micro font-medium px-1.5 py-0.5 rounded-full shrink-0 status-badge-pulse ${status.className}`}>{status.label}</span>
           </button>
         );
       })}
@@ -166,12 +166,12 @@ function ROIFeed() {
 function Pipeline({ stages, pipeline }: { stages: string[]; pipeline: { activeStage: number; confidence: number; resolutionTime: number; outcome: string } }) {
   return (
     <div className="flex flex-col gap-2">
-      <span className="text-[9px] font-semibold uppercase tracking-[0.15em] text-muted-foreground section-header-accent">AI Orchestration Flow</span>
+      <span className="type-micro uppercase tracking-[0.15em] text-muted-foreground section-header-accent">AI Orchestration Flow</span>
       <div className="flow-bg rounded-lg p-3 border border-border relative">
         <div className="flex items-center gap-1 flex-wrap">
           {stages.map((stage, i) => (
             <div key={stage} className="flex items-center gap-1 shrink-0">
-              <div className={`px-2 py-1 rounded text-[9px] font-medium transition-all duration-300 ${
+              <div className={`px-2 py-1 rounded text-[11px] font-medium transition-all duration-300 ${
                 i <= pipeline.activeStage ? "reflect-gradient text-white" : "bg-secondary text-muted-foreground"
               }`}>{stage}</div>
               {i < stages.length - 1 && (
@@ -180,10 +180,10 @@ function Pipeline({ stages, pipeline }: { stages: string[]; pipeline: { activeSt
             </div>
           ))}
         </div>
-        <div className="flex items-center gap-4 mt-2 text-[10px]">
-          <span className="text-muted-foreground">Confidence: <span className="font-mono text-foreground font-semibold">{pipeline.confidence}%</span></span>
-          <span className="text-muted-foreground">Processing: <span className="font-mono text-foreground font-semibold">{pipeline.resolutionTime}s</span></span>
-          <span className="text-muted-foreground">Outcome: <span className={`font-semibold ${pipeline.outcome === "Escalated" || pipeline.outcome === "Exception" ? "text-amber-600" : "text-primary"}`}>{pipeline.outcome}</span></span>
+        <div className="flex items-center gap-4 mt-2">
+          <span className="type-body">Confidence: <span className="font-mono font-semibold text-foreground">{pipeline.confidence}%</span></span>
+          <span className="type-body">Processing: <span className="font-mono font-semibold text-foreground">{pipeline.resolutionTime}s</span></span>
+          <span className="type-body">Outcome: <span className={`font-semibold ${pipeline.outcome === "Escalated" || pipeline.outcome === "Exception" ? "text-amber-600" : "text-primary"}`}>{pipeline.outcome}</span></span>
         </div>
       </div>
     </div>
@@ -244,7 +244,7 @@ function ROIMetrics() {
 function MetricsGrid({ items }: { items: { label: string; value: number; formatter: (n: number) => string; icon: React.ReactNode }[] }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <span className="text-[9px] font-semibold uppercase tracking-[0.15em] text-muted-foreground section-header-accent">Live Impact (Today)</span>
+      <span className="type-micro uppercase tracking-[0.15em] text-muted-foreground section-header-accent">Live Impact (Today)</span>
       <div className={`grid ${items.length > 4 ? "grid-cols-3" : "grid-cols-2"} gap-2`}>
         {items.map((item) => (
           <div
@@ -254,9 +254,9 @@ function MetricsGrid({ items }: { items: { label: string; value: number; formatt
           >
             <div className="flex items-center gap-1.5">
               <span className="text-primary">{item.icon}</span>
-              <span className="text-[9px] text-muted-foreground">{item.label}</span>
+              <span className="type-micro text-muted-foreground uppercase">{item.label}</span>
             </div>
-            <CountUpValue value={item.value} formatter={item.formatter} className="text-sm font-bold font-mono text-foreground" />
+            <CountUpValue value={item.value} formatter={item.formatter} className="text-[22px] font-bold font-mono text-foreground tracking-tight" />
           </div>
         ))}
       </div>
@@ -302,8 +302,8 @@ export function LiveOrchestration() {
           <div className="status-dot" />
           <span className="text-primary">{config.icon}</span>
           <div>
-            <span className="text-xs font-semibold text-foreground">{config.title}</span>
-            <span className="ml-2 text-[10px] text-muted-foreground">{config.subtitle}</span>
+            <span className="type-h3 text-foreground">{config.title}</span>
+            <span className="ml-2 type-body">{config.subtitle}</span>
           </div>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

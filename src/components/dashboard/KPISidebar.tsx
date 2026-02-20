@@ -86,7 +86,7 @@ export function KPISidebar() {
 
   return (
     <aside className="w-[220px] border-l border-border p-3 flex flex-col gap-2 overflow-y-auto shrink-0 hidden xl:flex" style={{ background: "hsl(230 16% 97%)" }}>
-      <span className="text-[9px] font-semibold uppercase tracking-[0.15em] reflect-gradient-text mb-1">
+      <span className="type-micro uppercase tracking-[0.15em] reflect-gradient-text mb-2">
         Live Command Metrics
       </span>
 
@@ -103,16 +103,16 @@ export function KPISidebar() {
               kpi.highlight ? "reflect-border" : ""
             }`}
           >
-            <span className="text-primary mt-0.5">{kpi.icon}</span>
+            <span className="text-primary mt-1">{kpi.icon}</span>
             <div className="flex flex-col min-w-0 flex-1">
-              <span className="text-[9px] text-muted-foreground leading-tight truncate">{kpi.label}</span>
-              <div className="flex items-center gap-1">
+              <span className="type-micro text-muted-foreground uppercase tracking-widest leading-tight truncate">{kpi.label}</span>
+              <div className="flex items-end gap-1 mt-0.5">
                 <CountUpValue
                   value={kpi.value}
                   formatter={kpi.formatter}
-                  className="text-[13px] font-bold font-mono text-foreground"
+                  className="type-kpi-value text-foreground"
                 />
-                {arrow && <span className={`text-[10px] font-semibold ${arrowColor}`}>{arrow}</span>}
+                {arrow && <span className={`text-[11px] font-semibold mb-0.5 ${arrowColor}`}>{arrow}</span>}
               </div>
             </div>
           </div>
