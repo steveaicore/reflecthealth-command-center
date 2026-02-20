@@ -7,6 +7,8 @@ export interface CallOutcome {
   confidence: number;
 }
 
+export type AudioMode = "embedded" | "executive";
+
 interface AudioEngineState {
   // Shared state
   audioEnabled: boolean;
@@ -26,10 +28,11 @@ interface AudioEngineState {
 
   // Audio state
   isPlaying: boolean;
-  setIsPlaying: (v: boolean) => void;
+  currentSpeaker: "caller" | "ai" | null;
+  audioMode: AudioMode | null;
 
-  // TTS helper
-  playTTS: (text: string, voiceId: string, volume?: number) => Promise<HTMLAudioElement | null>;
+  // TTS helper — returns a promise that resolves when audio finishes
+  playTTS: (text: string, voiceId: string, volume?: number) => Promise<void>;
   stopAudio: () => void;
 }
 
@@ -43,18 +46,48 @@ export function AudioEngineProvider({ children }: { children: React.ReactNode })
   const [isMuted, setIsMuted] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [currentSpeaker, setCurrentSpeaker] = useState<"caller" | "ai" | null>(null);
+  const [audioMode, setAudioMode] = useState<AudioMode | null>(null);
+
   const currentAudio = useRef<HTMLAudioElement | null>(null);
+  const playLock = useRef(false);
 
   const stopAudio = useCallback(() => {
     if (currentAudio.current) {
       currentAudio.current.pause();
+      currentAudio.current.onended = null;
       currentAudio.current = null;
     }
+    playLock.current = false;
     setIsPlaying(false);
+    setCurrentSpeaker(null);
+    setAudioMode(null);
   }, []);
 
-  const playTTS = useCallback(async (text: string, voiceId: string, volume = 0.4): Promise<HTMLAudioElement | null> => {
-    if (isMuted) return null;
+  const playTTS = useCallback(async (text: string, voiceId: string, volume = 0.4): Promise<void> => {
+    // If muted, simulate a short delay instead of playing audio
+    if (isMuted) {
+      await new Promise((r) => setTimeout(r, 800));
+      return;
+    }
+
+    // Stop any currently playing audio first
+    if (currentAudio.current) {
+      currentAudio.current.pause();
+      currentAudio.current.onended = null;
+      currentAudio.current = null;
+    }
+
+    // Wait for any previous playback to fully release
+    while (playLock.current) {
+      await new Promise((r) => setTimeout(r, 50));
+    }
+
+    playLock.current = true;
+    const speaker = voiceId === "EXAVITQu4vr4xnSDxMaL" ? "caller" as const : "ai" as const;
+    setCurrentSpeaker(speaker);
+    setIsPlaying(true);
+
     try {
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`,
@@ -70,7 +103,7 @@ export function AudioEngineProvider({ children }: { children: React.ReactNode })
       );
       if (!response.ok) {
         console.warn("TTS request failed:", response.status);
-        return null;
+        return;
       }
       const audioBlob = await response.blob();
       const audioUrl = URL.createObjectURL(audioBlob);
@@ -78,18 +111,26 @@ export function AudioEngineProvider({ children }: { children: React.ReactNode })
       audio.volume = volume;
       audio.playbackRate = playbackSpeed;
       currentAudio.current = audio;
-      setIsPlaying(true);
-      await audio.play();
-      audio.onended = () => {
-        URL.revokeObjectURL(audioUrl);
-        currentAudio.current = null;
-        setIsPlaying(false);
-      };
-      return audio;
+
+      await new Promise<void>((resolve) => {
+        audio.onended = () => {
+          URL.revokeObjectURL(audioUrl);
+          currentAudio.current = null;
+          resolve();
+        };
+        audio.onerror = () => {
+          URL.revokeObjectURL(audioUrl);
+          currentAudio.current = null;
+          resolve();
+        };
+        audio.play().catch(() => resolve());
+      });
     } catch (err) {
       console.warn("Audio playback error:", err);
+    } finally {
+      playLock.current = false;
       setIsPlaying(false);
-      return null;
+      setCurrentSpeaker(null);
     }
   }, [isMuted, playbackSpeed]);
 
@@ -101,7 +142,7 @@ export function AudioEngineProvider({ children }: { children: React.ReactNode })
       currentCallOutcome, setCurrentCallOutcome,
       isMuted, setIsMuted,
       playbackSpeed, setPlaybackSpeed,
-      isPlaying, setIsPlaying,
+      isPlaying, currentSpeaker, audioMode,
       playTTS, stopAudio,
     }}>
       {children}

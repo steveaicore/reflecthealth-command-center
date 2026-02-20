@@ -1,24 +1,31 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useAudioEngine } from "@/contexts/AudioEngineContext";
 import { useDashboard } from "@/contexts/DashboardContext";
 import { fmtCurrency, fmtDecimal } from "@/lib/format";
-import { Play, X, Bot, User, CheckCircle2, ShieldCheck, DollarSign, TrendingUp } from "lucide-react";
+import { Play, X, Bot, User, CheckCircle2, ShieldCheck, DollarSign, TrendingUp, Clock, Brain } from "lucide-react";
 
 const CALLER_VOICE = "EXAVITQu4vr4xnSDxMaL";
 const AI_VOICE = "onwK4e9ZLuTAKqWW03F9";
 
-const EXECUTIVE_SCRIPT = [
-  { speaker: "caller" as const, text: "Hi, I'm calling to check the status of my prior authorization for the MRI." },
-  { speaker: "ai" as const, text: "Of course. I'm pulling up your authorization now. I can see it was approved yesterday. Your MRI is cleared for scheduling." },
-  { speaker: "caller" as const, text: "That's great. And can you confirm my copay for the imaging center?" },
-  { speaker: "ai" as const, text: "Your plan covers diagnostic imaging at 80 percent after deductible. Your estimated out-of-pocket is 120 dollars at an in-network facility. Would you like me to help locate one?" },
+const EXECUTIVE_SCRIPT: { speaker: "caller" | "ai"; text: string; durationMs: number }[] = [
+  { speaker: "caller", text: "Hi, I'm calling to verify benefits for a UHC member before scheduling a specialist visit.", durationMs: 6000 },
+  { speaker: "ai", text: "Happy to help. Please provide the member ID and date of birth so I can retrieve eligibility details.", durationMs: 8000 },
+  { speaker: "caller", text: "Member ID 4578921. Date of birth January 14, 1986.", durationMs: 4000 },
+  { speaker: "ai", text: "Thank you. The member has active coverage. Specialist visits are covered with a thirty-dollar copay. No prior authorization required for in-network providers.", durationMs: 8000 },
+  { speaker: "ai", text: "This interaction has been automatically resolved.", durationMs: 4000 },
 ];
 
-const CALL_OVERLAYS = [
-  { timestamp: 0, label: "AI Handling", icon: Bot, color: "text-primary" },
-  { timestamp: 1, label: "Call Deflected", icon: CheckCircle2, color: "text-emerald-600" },
-  { timestamp: 2, label: "Escalation Avoided", icon: ShieldCheck, color: "text-emerald-600" },
-  { timestamp: 3, label: "+$4.32 Cost Avoided", icon: DollarSign, color: "text-emerald-600" },
+// Timed overlays shown during playback
+const TIMED_OVERLAYS: { afterLineIndex: number; label: string; icon: typeof Brain; color: string }[] = [
+  { afterLineIndex: 1, label: "Intent Classified: Benefits Verification", icon: Brain, color: "text-primary" },
+  { afterLineIndex: 3, label: "Policy Validated — Section 7.4", icon: ShieldCheck, color: "text-primary" },
+];
+
+// Final overlays shown at completion
+const COMPLETION_OVERLAYS = [
+  { label: "Call Deflected", icon: CheckCircle2, color: "text-emerald-600" },
+  { label: "+$4.32 Cost Avoided", icon: DollarSign, color: "text-emerald-600" },
+  { label: "+6 Minutes Saved", icon: Clock, color: "text-emerald-600" },
 ];
 
 interface TranscriptLine {
@@ -33,50 +40,78 @@ interface Props {
 }
 
 export function ExecutivePlaybackModal({ open, onClose }: Props) {
-  const { playTTS, stopAudio, isMuted } = useAudioEngine();
+  const { playTTS, stopAudio, isPlaying: audioPlaying } = useAudioEngine();
   const { results } = useDashboard();
   const { combined, callCenter } = results;
 
   const [transcript, setTranscript] = useState<TranscriptLine[]>([]);
   const [playing, setPlaying] = useState(false);
   const [completed, setCompleted] = useState(false);
-  const [activeOverlays, setActiveOverlays] = useState<number[]>([]);
+  const [activeOverlays, setActiveOverlays] = useState<string[]>([]);
+  const abortRef = useRef(false);
+
+  // Reset on close
+  useEffect(() => {
+    if (!open) {
+      abortRef.current = true;
+      setTranscript([]);
+      setCompleted(false);
+      setPlaying(false);
+      setActiveOverlays([]);
+    }
+  }, [open]);
 
   const runPlayback = useCallback(async () => {
+    if (playing) return;
+    abortRef.current = false;
     setPlaying(true);
     setCompleted(false);
     setTranscript([]);
     setActiveOverlays([]);
 
     for (let i = 0; i < EXECUTIVE_SCRIPT.length; i++) {
+      if (abortRef.current) break;
+
       const line = EXECUTIVE_SCRIPT[i];
       const id = `exec-${i}`;
+
+      // Add transcript line
       setTranscript((prev) => [...prev, { id, speaker: line.speaker, text: line.text }]);
 
-      // Show overlay callout
-      if (i < CALL_OVERLAYS.length) {
-        setActiveOverlays((prev) => [...prev, i]);
-      }
-
+      // Play TTS (awaits completion — no overlap possible)
       const voiceId = line.speaker === "caller" ? CALLER_VOICE : AI_VOICE;
       await playTTS(line.text, voiceId, 0.5);
-      await new Promise((r) => setTimeout(r, 400));
+
+      if (abortRef.current) break;
+
+      // Check for timed overlays after this line
+      const overlay = TIMED_OVERLAYS.find((o) => o.afterLineIndex === i);
+      if (overlay) {
+        setActiveOverlays((prev) => [...prev, overlay.label]);
+      }
+
+      // 300ms buffer between speakers
+      await new Promise((r) => setTimeout(r, 300));
     }
 
+    if (!abortRef.current) {
+      // Show completion overlays
+      setActiveOverlays((prev) => [...prev, ...COMPLETION_OVERLAYS.map((o) => o.label)]);
+      setCompleted(true);
+    }
     setPlaying(false);
-    setCompleted(true);
-  }, [playTTS]);
+  }, [playing, playTTS]);
 
   const handleClose = () => {
+    abortRef.current = true;
     stopAudio();
     setPlaying(false);
-    setTranscript([]);
-    setCompleted(false);
-    setActiveOverlays([]);
     onClose();
   };
 
   if (!open) return null;
+
+  const allOverlayDefs = [...TIMED_OVERLAYS.map((o) => ({ label: o.label, icon: o.icon, color: o.color })), ...COMPLETION_OVERLAYS];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={handleClose}>
@@ -84,8 +119,8 @@ export function ExecutivePlaybackModal({ open, onClose }: Props) {
         {/* Header */}
         <div className="px-5 py-3 border-b border-border flex items-center justify-between">
           <div>
-            <h3 className="text-sm font-semibold text-foreground">AI Interaction — Executive Playback</h3>
-            <p className="text-[10px] text-muted-foreground mt-0.5">Scripted demonstration of AI call resolution</p>
+            <h3 className="text-sm font-semibold text-foreground">Executive Playback — Benefits Verification Call</h3>
+            <p className="text-[10px] text-muted-foreground mt-0.5">Incoming · Provider · Benefits Verification · UHC</p>
           </div>
           <button onClick={handleClose} className="text-muted-foreground hover:text-foreground">
             <X className="h-4 w-4" />
@@ -101,7 +136,7 @@ export function ExecutivePlaybackModal({ open, onClose }: Props) {
               className="w-full py-3 rounded-lg reflect-gradient text-white text-sm font-semibold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
             >
               <Play className="h-4 w-4" />
-              Play AI Interaction Example
+              Play Executive Playback
             </button>
           )}
 
@@ -128,19 +163,20 @@ export function ExecutivePlaybackModal({ open, onClose }: Props) {
           {/* Overlays */}
           {activeOverlays.length > 0 && (
             <div className="grid grid-cols-2 gap-2">
-              {activeOverlays.map((idx) => {
-                const overlay = CALL_OVERLAYS[idx];
+              {activeOverlays.map((label) => {
+                const def = allOverlayDefs.find((d) => d.label === label);
+                if (!def) return null;
                 return (
-                  <div key={idx} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-border bg-card text-[10px] font-medium">
-                    <overlay.icon className={`h-3 w-3 ${overlay.color}`} />
-                    <span className={overlay.color}>{overlay.label}</span>
+                  <div key={label} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-border bg-card text-[10px] font-medium animate-fade-in">
+                    <def.icon className={`h-3 w-3 ${def.color}`} />
+                    <span className={def.color}>{def.label}</span>
                   </div>
                 );
               })}
             </div>
           )}
 
-          {/* Confidence indicator */}
+          {/* Confidence indicator during playback */}
           {playing && (
             <div className="flex items-center gap-2 text-[10px]">
               <span className="text-muted-foreground">Confidence:</span>
@@ -156,11 +192,11 @@ export function ExecutivePlaybackModal({ open, onClose }: Props) {
             <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
               <div className="text-[11px] font-semibold text-foreground flex items-center gap-1.5">
                 <TrendingUp className="h-3.5 w-3.5 text-primary" />
-                Impact of Similar Calls at Scale
+                Projected Annual Impact
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <span className="text-[9px] text-muted-foreground uppercase block">Annual Call Savings</span>
+                  <span className="text-[9px] text-muted-foreground uppercase block">Call Savings</span>
                   <span className="text-sm font-bold font-mono text-foreground">{fmtCurrency(callCenter.annualSavings)}</span>
                 </div>
                 <div>
@@ -168,10 +204,8 @@ export function ExecutivePlaybackModal({ open, onClose }: Props) {
                   <span className="text-sm font-bold font-mono text-foreground">{fmtDecimal(callCenter.fteSaved, 1)}</span>
                 </div>
                 <div>
-                  <span className="text-[9px] text-muted-foreground uppercase block">ROI Contribution</span>
-                  <span className="text-sm font-bold font-mono text-foreground">
-                    {fmtDecimal(combined.roi > 0 ? (callCenter.annualSavings / (callCenter.annualSavings + results.claims.annualSavings)) * combined.roi : 0, 1)}× of {fmtDecimal(combined.roi, 2)}×
-                  </span>
+                  <span className="text-[9px] text-muted-foreground uppercase block">ROI Multiple</span>
+                  <span className="text-sm font-bold font-mono text-foreground">{fmtDecimal(combined.roi, 2)}×</span>
                 </div>
                 <div>
                   <span className="text-[9px] text-muted-foreground uppercase block">Payback Period</span>
