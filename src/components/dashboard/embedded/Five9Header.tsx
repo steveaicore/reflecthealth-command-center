@@ -74,6 +74,12 @@ export function Five9Header({ activeTab, setActiveTab }: Five9HeaderProps) { // 
           Export
         </button>
         <button
+          onClick={() => setDeploymentMode("opyn")}
+          className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded bg-white/10 text-white/70 hover:bg-white/20 hover:text-white transition-colors"
+        >
+          Opyn Health
+        </button>
+        <button
           onClick={() => setDeploymentMode("white-label")}
           className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded bg-white/10 text-white/70 hover:bg-white/20 hover:text-white transition-colors"
         >

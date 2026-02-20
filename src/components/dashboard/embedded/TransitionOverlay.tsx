@@ -9,6 +9,7 @@ interface TransitionOverlayProps {
 const messages: Record<DeploymentMode, string> = {
   "white-label": "Deploy as your branded intelligence layer.",
   "embedded": "Or embed directly inside your existing Five9 workflow.",
+  "opyn": "Embedded AI orchestration for member & provider portals.",
 };
 
 export function TransitionOverlay({ mode, visible }: TransitionOverlayProps) {

@@ -64,6 +64,17 @@ export function Header() {
               White-Label
             </button>
             <button
+              onClick={() => setDeploymentMode("opyn")}
+              className={`flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium rounded transition-all ${
+                deploymentMode === "opyn"
+                  ? "bg-[hsl(265,60%,55%)] text-white"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Globe className="h-2.5 w-2.5" />
+              Opyn Health
+            </button>
+            <button
               onClick={() => setDeploymentMode("embedded")}
               className={`flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium rounded transition-all ${
                 deploymentMode === "embedded"
@@ -72,7 +83,7 @@ export function Header() {
               }`}
             >
               <Plug className="h-2.5 w-2.5" />
-              Embedded
+              Five9 Voice
             </button>
           </div>
           <button

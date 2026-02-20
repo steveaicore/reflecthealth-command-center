@@ -13,6 +13,7 @@ import { LiveOrchestration } from "@/components/dashboard/LiveOrchestration";
 import { DashboardFooter } from "@/components/dashboard/Footer";
 import { Module5 } from "@/components/dashboard/Module5";
 import { Five9Layout } from "@/components/dashboard/embedded/Five9Layout";
+import { OpynHealthLayout } from "@/components/dashboard/opyn/OpynHealthLayout";
 import { TransitionOverlay } from "@/components/dashboard/embedded/TransitionOverlay";
 
 function DashboardContent() {
@@ -34,6 +35,8 @@ function DashboardContent() {
 
         {deploymentMode === "embedded" ? (
           <Five9Layout />
+        ) : deploymentMode === "opyn" ? (
+          <OpynHealthLayout />
         ) : (
           <div className="min-h-screen flex flex-col bg-background">
             <Header />
