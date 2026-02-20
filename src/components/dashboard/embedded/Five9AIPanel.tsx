@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSimulation } from "@/contexts/SimulationContext";
 import { useDashboard } from "@/contexts/DashboardContext";
+import { useAudioEngine } from "@/contexts/AudioEngineContext";
 import { DetailModal } from "../DetailModal";
 import penguinAiLogo from "@/assets/penguin-ai-logo.png";
 import penguinLogo from "@/assets/penguin-logo.png";
@@ -13,40 +14,41 @@ const PIPELINE_STAGES = [
   { label: "Response", icon: ArrowRight },
 ];
 
+const INTENT_RESPONSES: Record<string, string> = {
+  "Benefits Verification": "Member is active under UHC Choice Plus PPO. In-network specialist copay is $30. Deductible: $1,112 of $1,500 met (74%). No balance issues. Coverage confirmed through 12/31/2026.",
+  "Eligibility Check": "Eligibility confirmed. Plan status: Active under employer-sponsored PPO plan. Effective date: 01/01/2026. PCP assignment on file. No lapse in coverage detected.",
+  "Claim Status": "Claim #772451 received February 3rd. Currently in processing. Determination expected within five business days. No additional documentation required at this time.",
+  "Prior Authorization Status": "PA request is under clinical review. Estimated determination within 48 hours. All required clinical documentation has been received.",
+  "Underpaid Claim Review": "This claim requires manual review by a claims specialist. The case has been flagged for secondary review due to payment discrepancy. Routing to senior claims analyst.",
+  "COB Verification": "COB verified. Primary: UHC. Secondary: Aetna. Primary processes first, then secondary covers remaining balance up to plan limits. Standard COB rules apply.",
+  "Claim Reprocessing Request": "Claim #554102 reprocessing initiated. Original submission had incorrect procedure code. Updated determination expected within 7 business days.",
+  "Appeal Status Inquiry": "Appeal #AP-20241 is currently under secondary review. A determination letter will be issued within 10 business days per regulatory requirements.",
+  "Timely Filing Question": "Timely filing limit for Cigna PPO: 90 days from date of service. Electronic submissions must be received by the 90-day mark. Extensions require written documentation.",
+  "Claims Status": "Your claim has been processed and approved. Payment was issued on February 15th to the provider on file. EOB available in member portal.",
+  "ID Card Replacement": "A new ID card has been requested. It will arrive within 7-10 business days. A digital copy has been sent to the email on file and is available in the mobile app.",
+  "Deductible / OOP Inquiry": "Individual deductible: $1,200 of $2,000 met (60%). Out-of-pocket maximum remaining: $4,200. All amounts reflect claims processed through today.",
+};
+
 export function Five9AIPanel() {
   const { pipeline, events } = useSimulation();
   const { callParams } = useDashboard();
+  const { liveCallIntent } = useAudioEngine();
   const activeEvent = events[0];
   const [draftPopulated, setDraftPopulated] = useState(false);
   const [confidenceModalOpen, setConfidenceModalOpen] = useState(false);
   const [complianceModalOpen, setComplianceModalOpen] = useState(false);
   const [draftSent, setDraftSent] = useState(false);
 
-  // Reset draft state when active event changes
+  // Reset draft state when active event or live call changes
   useEffect(() => {
     setDraftPopulated(false);
     setDraftSent(false);
-  }, [activeEvent?.id]);
+  }, [activeEvent?.id, liveCallIntent]);
 
-  const REASON_RESPONSES: Record<string, string> = {
-    "Benefits Verification": `Member is active under ${activeEvent?.payer || "BCBS"} PPO. In-network specialist copay is $30. Deductible: $1,112 of $1,500 met (74%). No balance issues. Coverage confirmed through 12/31/2026.`,
-    "Eligibility Inquiry": `Eligibility confirmed for ${activeEvent?.payer || "BCBS"}. Plan status: Active. Effective date: 01/01/2026. PCP assignment on file. No lapse in coverage detected.`,
-    "Claim Status": `Claim processed and paid on 2/12/2026. Allowed amount: $285.00. ${activeEvent?.payer || "BCBS"} paid $228.00 (80%). Member responsibility: $57.00 copay. EOB mailed 2/14/2026.`,
-    "Prior Authorization Verification": `PA #PA-2026-44821 approved for CPT 27447. Valid through 04/15/2026. In-network facility required. No step therapy needed. Member cost share: $8,000 estimated OOP.`,
-    "Coordination of Benefits Verification": `COB verified. Primary: ${activeEvent?.payer || "BCBS"}. Secondary: Medicare Part B. Primary pays 80% of allowed amount. Submit EOB to secondary for remaining balance.`,
-    "Referral Validation": `Referral #RF-8821 on file from PCP Dr. Martinez. Valid for 3 specialist visits through 06/30/2026. In-network orthopedic providers only. No additional referral needed.`,
-    "Appeal Status Inquiry": `Appeal #AP-2026-1193 received 2/10/2026. Currently under medical director review. Expected determination by 2/25/2026. Original denial reason: CO-18 (Duplicate Claim).`,
-    "Timely Filing Question": `Timely filing limit for ${activeEvent?.payer || "BCBS"}: 180 days from date of service. Claims submitted after deadline require written exception with supporting documentation.`,
-    "Claim Reprocessing Request": `Claim reprocessing initiated for #CLM-4821. Original denial: incorrect modifier. Corrected claim submitted with modifier -59. Expected turnaround: 5-7 business days.`,
-    "Claims Status": `Your claim for date of service 1/28/2026 has been processed. ${activeEvent?.payer || "BCBS"} paid $195.00. Your responsibility: $30.00 copay. Payment issued to provider on 2/10/2026.`,
-    "ID Card Request": `New ID card has been ordered and will arrive within 5-7 business days. In the meantime, a digital ID card is available in the ${activeEvent?.payer || "BCBS"} member portal and mobile app.`,
-    "Deductible / OOP Balance Inquiry": `Current deductible status: $1,112 of $1,500 met (74%). Out-of-pocket maximum: $2,840 of $6,500 applied (44%). All amounts reflect claims processed through today.`,
-    "Pharmacy Coverage Question": `Prescription is covered under your ${activeEvent?.payer || "BCBS"} formulary. Tier 2 — Preferred Brand. Copay: $35 for 30-day supply. Mail order (90-day): $70. No prior auth required.`,
-  };
-
-  const suggestedResponse = activeEvent
-    ? REASON_RESPONSES[activeEvent.reason] || `Based on policy guidelines, the ${activeEvent.reason.toLowerCase()} request for ${activeEvent.payer} has been verified. All documentation is in order. No further action required.`
-    : "";
+  // Use the live call intent if available, otherwise fall back to simulation event
+  const displayIntent = liveCallIntent || activeEvent?.reason || "";
+  const suggestedResponse = INTENT_RESPONSES[displayIntent]
+    || (displayIntent ? `Based on policy guidelines, the ${displayIntent.toLowerCase()} request has been verified. All documentation is in order. No further action required.` : "");
 
   const complianceFlags = [
     { label: "HIPAA Compliant", ok: true },
@@ -117,7 +119,7 @@ export function Five9AIPanel() {
       </button>
 
       {/* Recommended Response */}
-      {activeEvent && (
+      {(displayIntent || activeEvent) && suggestedResponse && (
         <div className="five9-card p-2.5 space-y-2 five9-active-border">
           <div className="flex items-center gap-1.5">
             <img src={penguinLogo} alt="Penguin AI" className="h-4 w-4 object-contain" />
