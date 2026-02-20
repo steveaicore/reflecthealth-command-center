@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useDashboard } from "@/contexts/DashboardContext";
-import { Monitor, User, Building2, Activity, CheckCircle, Phone } from "lucide-react";
+import { Monitor, User, Building2, Activity, CheckCircle, Phone, TrendingUp } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { CountUpValue } from "@/components/dashboard/CountUpValue";
 import penguinLogo from "@/assets/penguin-logo-pink.png";
 import { MemberBenefitAssistant } from "./MemberBenefitAssistant";
 import { CostTransparencyPanel } from "./CostTransparencyPanel";
@@ -8,29 +10,78 @@ import { ProviderPortalView } from "./ProviderPortalView";
 
 type OpynMode = "member" | "provider";
 
+/* ─── PART 4: Dynamic Orchestration Sidebar ─── */
 function OrchestrationSidebar() {
-  const metrics = [
-    { label: "Member Inquiries Resolved", value: "72%", sub: "automated" },
-    { label: "Provider Eligibility Checks", value: "85%", sub: "automated" },
-    { label: "Call Deflection Impact", value: "-31%", sub: "vs. baseline" },
-    { label: "Escalations Prevented", value: "+24%", sub: "improvement" },
-    { label: "Annualized Cost Impact", value: "$1.2M", sub: "savings" },
+  const [liveMode, setLiveMode] = useState(true);
+  const [metrics, setMetrics] = useState({
+    memberResolved: 72,
+    providerEligibility: 85,
+    callDeflection: 31,
+    escalationsPrevented: 24,
+    annualizedCost: 1.20,
+  });
+  const [pulse, setPulse] = useState(false);
+
+  useEffect(() => {
+    if (!liveMode) return;
+    const iv = setInterval(() => {
+      setMetrics(prev => ({
+        memberResolved: Math.min(99, prev.memberResolved + (Math.random() > 0.5 ? 1 : 0)),
+        providerEligibility: Math.min(99, prev.providerEligibility + (Math.random() > 0.6 ? 1 : 0)),
+        callDeflection: Math.min(50, prev.callDeflection + (Math.random() > 0.7 ? 1 : 0)),
+        escalationsPrevented: Math.min(45, prev.escalationsPrevented + (Math.random() > 0.6 ? 1 : 0)),
+        annualizedCost: Math.min(3, +(prev.annualizedCost + 0.02 + Math.random() * 0.02).toFixed(2)),
+      }));
+      setPulse(true);
+      setTimeout(() => setPulse(false), 600);
+    }, 4000 + Math.random() * 2000);
+    return () => clearInterval(iv);
+  }, [liveMode]);
+
+  const metricItems = [
+    { label: "Member Inquiries Resolved", value: `${metrics.memberResolved}%`, sub: "automated", raw: metrics.memberResolved },
+    { label: "Provider Eligibility Checks", value: `${metrics.providerEligibility}%`, sub: "automated", raw: metrics.providerEligibility },
+    { label: "Call Deflection Impact", value: `-${metrics.callDeflection}%`, sub: "vs. baseline", raw: metrics.callDeflection },
+    { label: "Escalations Prevented", value: `+${metrics.escalationsPrevented}%`, sub: "improvement", raw: metrics.escalationsPrevented },
+    { label: "Annualized Cost Impact", value: `$${metrics.annualizedCost.toFixed(2)}M`, sub: "savings", raw: metrics.annualizedCost },
   ];
 
   return (
     <div className="w-64 border-l border-border bg-card p-4 space-y-4 overflow-y-auto">
-      <div className="flex items-center gap-2">
-        <Activity className="h-3.5 w-3.5 text-[hsl(var(--opyn-purple))]" />
-        <h3 className="text-[11px] font-semibold">AI Orchestration Activity</h3>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Activity className="h-3.5 w-3.5 text-[hsl(var(--opyn-purple))]" />
+          <h3 className="text-[11px] font-semibold">AI Orchestration Activity</h3>
+        </div>
       </div>
-      <p className="text-[9px] text-muted-foreground -mt-2">Portal Automation Metrics</p>
+
+      {/* Static / Live toggle */}
+      <div className="flex items-center justify-between">
+        <span className="text-[9px] text-muted-foreground font-medium">
+          {liveMode ? "Live Mode" : "Static Demo"}
+        </span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[8px] text-muted-foreground">Static</span>
+          <Switch checked={liveMode} onCheckedChange={setLiveMode} className="scale-75" />
+          <span className="text-[8px] text-muted-foreground">Live</span>
+        </div>
+      </div>
+
+      {liveMode && (
+        <div className="flex items-center gap-1 text-[9px] text-[hsl(var(--opyn-green))]">
+          <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--opyn-green))] animate-pulse" />
+          Metrics updating in real-time
+        </div>
+      )}
 
       <div className="space-y-3">
-        {metrics.map((m) => (
-          <div key={m.label} className="rounded-xl border border-border p-3 space-y-1">
+        {metricItems.map((m) => (
+          <div key={m.label} className={`rounded-xl border border-border p-3 space-y-1 transition-all duration-300 ${pulse && liveMode ? "border-[hsl(var(--opyn-green)/0.4)]" : ""}`}>
             <p className="text-[9px] text-muted-foreground font-medium">{m.label}</p>
             <p className="text-lg font-bold font-mono text-foreground">{m.value}</p>
             <p className="text-[9px] text-muted-foreground">{m.sub}</p>
+            {/* Mini sparkline */}
+            {liveMode && <MiniSparkline value={m.raw} />}
           </div>
         ))}
       </div>
@@ -45,6 +96,27 @@ function OrchestrationSidebar() {
         ))}
       </div>
     </div>
+  );
+}
+
+/* Mini animated sparkline using CSS */
+function MiniSparkline({ value }: { value: number }) {
+  const [points, setPoints] = useState<number[]>(() => Array.from({ length: 8 }, () => 30 + Math.random() * 20));
+
+  useEffect(() => {
+    setPoints(prev => [...prev.slice(1), 20 + (value % 40) + Math.random() * 15]);
+  }, [value]);
+
+  const max = Math.max(...points, 1);
+  const h = 20;
+  const w = 100;
+  const step = w / (points.length - 1);
+  const pathD = points.map((p, i) => `${i === 0 ? "M" : "L"} ${i * step} ${h - (p / max) * h}`).join(" ");
+
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-5 mt-1" preserveAspectRatio="none">
+      <path d={pathD} fill="none" stroke="hsl(var(--opyn-green))" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="transition-all duration-500" />
+    </svg>
   );
 }
 
