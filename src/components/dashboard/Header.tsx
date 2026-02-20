@@ -97,7 +97,7 @@ export function Header() {
             className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium rounded bg-gradient-to-r from-[hsl(340,80%,55%)] to-[hsl(25,95%,55%)] text-white hover:opacity-90 transition-all"
           >
             <Play className="h-3 w-3" />
-            Simulate AI Orchestration
+            Launch AI Call Deflection
           </button>
 
           <ScenarioSelector />
