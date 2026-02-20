@@ -128,95 +128,106 @@ async function fetchTTS(text: string): Promise<string | null> {
 // ─── VoiceReplayPanel ─────────────────────────────────────────────────────────
 type TurnDisplay = { role: "caller" | "ai"; text: string; state: "pending" | "playing" | "done" };
 
+interface ReplaySavings {
+  originalTimeSec: number;
+  aiTimeSec: number;
+  savedSec: number;
+  savedPct: number;
+  costManual: number;
+  costAI: number;
+  savedCost: number;
+}
+
+async function fetchAlignedDialogue(
+  callerTurns: string[],
+  analysis: CallAnalysis
+): Promise<string[]> {
+  try {
+    const res = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-replay-dialogue`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({
+          callerTurns,
+          callType: analysis.call_type,
+          intent: analysis.intent,
+          entities: analysis.entities,
+          summary: analysis.summary,
+        }),
+      }
+    );
+    if (!res.ok) return [];
+    const { responses } = await res.json();
+    return Array.isArray(responses) ? responses : [];
+  } catch {
+    return [];
+  }
+}
+
+function buildSegments(words: SpeakerWord[]) {
+  const segs: { speaker: string; text: string; startTime: number; endTime: number }[] = [];
+  if (!words.length) return { segs, agentSpeaker: "" };
+
+  let cur = words[0].speaker, s0 = words[0].start, s1 = words[0].end, txt = words[0].text;
+  for (let i = 1; i < words.length; i++) {
+    const w = words[i];
+    if (w.speaker === cur) { s1 = w.end; txt += w.text; }
+    else {
+      if (txt.trim()) segs.push({ speaker: cur, text: txt.trim(), startTime: s0, endTime: s1 });
+      cur = w.speaker; s0 = w.start; s1 = w.end; txt = w.text;
+    }
+  }
+  if (txt.trim()) segs.push({ speaker: cur, text: txt.trim(), startTime: s0, endTime: s1 });
+
+  // Identify agent vs caller speaker
+  const agentPhrases = /how can i (help|assist)|thank you for calling|this is .{2,20} (from|with|at)|your (account|policy|claim|coverage|member|benefit)|let me (pull|look|check|verify)|i('ve| have) (located|found|confirmed|verified)|have a great|is there anything else/i;
+  const scores: Record<string, number> = {};
+  for (const seg of segs) {
+    if (!scores[seg.speaker]) scores[seg.speaker] = 0;
+    if (agentPhrases.test(seg.text)) scores[seg.speaker]++;
+  }
+
+  const allSpeakers = [...new Set(segs.map(s => s.speaker))];
+  let agentSpeaker = allSpeakers[0];
+  let topScore = -1;
+  for (const sp of allSpeakers) {
+    const sc = scores[sp] ?? 0;
+    if (sc > topScore) { topScore = sc; agentSpeaker = sp; }
+  }
+  // Default: speaker_0 answered first = agent
+  if (topScore <= 0) agentSpeaker = allSpeakers[0];
+
+  return { segs, agentSpeaker };
+}
+
 function VoiceReplayPanel({ analysis, audioFile }: { analysis: CallAnalysis; audioFile: File | null }) {
   const [turns, setTurns] = useState<TurnDisplay[]>([]);
   const [playing, setPlaying] = useState(false);
   const [paused, setPaused] = useState(false);
   const [completed, setCompleted] = useState(false);
   const [overlays, setOverlays] = useState<string[]>([]);
+  const [loadingDialogue, setLoadingDialogue] = useState(false);
+  const [savings, setSavings] = useState<ReplaySavings | null>(null);
   const abortRef = useRef(false);
   const pauseRef = useRef(false);
   const bufRef = useRef<AudioBuffer | null>(null);
   const activeAudioRef = useRef<HTMLAudioElement | null>(null);
+  const replayStartRef = useRef<number>(0);
 
   const OVERLAYS = ["✔ Intent Identified", "✔ Member ID Validated", "✔ Data Retrieved", "✔ Backend Systems Queried", "✔ Compliance Log Created", "✔ CRM Updated"];
   const TASKS = [{ e: "🧾", l: "Call summary generated" }, { e: "🗂", l: "Structured data packet created" }, { e: "📋", l: "CRM record updated" }, { e: "📤", l: "Claims system notified" }, { e: "✉️", l: "Follow-up email queued" }, { e: "📱", l: "SMS confirmation sent" }];
-
-  const buildConversation = useCallback((): SpeakerTurn[] => {
-    const words = analysis.speakerWords || [];
-    const aiSentences = (analysis.ai_response_script.match(/[^.!?]+[.!?]+/g) || [analysis.ai_response_script]).map(s => s.trim()).filter(Boolean);
-
-    if (words.length > 0) {
-      // Group consecutive words by speaker into segments
-      const segs: { speaker: string; text: string; startTime: number; endTime: number }[] = [];
-      let cur = words[0].speaker, s0 = words[0].start, s1 = words[0].end, txt = words[0].text;
-      for (let i = 1; i < words.length; i++) {
-        const w = words[i];
-        if (w.speaker === cur) { s1 = w.end; txt += w.text; }
-        else {
-          if (txt.trim()) segs.push({ speaker: cur, text: txt.trim(), startTime: s0, endTime: s1 });
-          cur = w.speaker; s0 = w.start; s1 = w.end; txt = w.text;
-        }
-      }
-      if (txt.trim()) segs.push({ speaker: cur, text: txt.trim(), startTime: s0, endTime: s1 });
-
-      // Identify which speaker label is the AGENT (rep) vs CALLER (customer).
-      // In ElevenLabs diarization, speaker_0 is the FIRST speaker to talk.
-      // In call center recordings the AGENT typically answers first ("Thank you for calling...").
-      // So speaker_0 = agent, speaker_1 = caller is the most common pattern.
-      // We verify this by scoring agent-like phrases and use it as a confidence check.
-      const agentPhrases = /how can i (help|assist)|thank you for calling|this is .{2,20} (from|with|at)|your (account|policy|claim|coverage|member|benefit)|let me (pull|look|check|verify)|i('ve| have) (located|found|confirmed|verified)|have a great|is there anything else/i;
-      const speakerScores: Record<string, number> = {};
-      for (const seg of segs) {
-        if (!speakerScores[seg.speaker]) speakerScores[seg.speaker] = 0;
-        if (agentPhrases.test(seg.text)) speakerScores[seg.speaker]++;
-      }
-
-      const allSpeakers = [...new Set(segs.map(s => s.speaker))];
-
-      // Find speaker with highest agent-phrase score
-      let agentSpeaker = allSpeakers[0];
-      let topScore = -1;
-      for (const sp of allSpeakers) {
-        if ((speakerScores[sp] ?? 0) > topScore) {
-          topScore = speakerScores[sp] ?? 0;
-          agentSpeaker = sp;
-        }
-      }
-
-      // If no phrase hits, default to speaker_0 as agent (they answered the call)
-      if (topScore === 0) {
-        agentSpeaker = allSpeakers[0]; // speaker_0 = first speaker = agent
-      }
-
-      // Map segments: agent → "ai" (will get Penguin TTS), other → "caller" (real audio)
-      let aiIdx = 0;
-      return segs.map(seg => {
-        if (seg.speaker === agentSpeaker) {
-          const text = aiSentences[aiIdx] ?? seg.text;
-          aiIdx = Math.min(aiIdx + 1, aiSentences.length - 1);
-          return { role: "ai" as const, text, startTime: seg.startTime, endTime: seg.endTime };
-        }
-        return { role: "caller" as const, text: seg.text, startTime: seg.startTime, endTime: seg.endTime };
-      });
-    }
-
-    // Fallback: parse transcript lines
-    const lines = analysis.transcript.split('\n').filter(Boolean);
-    const callerLines = lines.filter(l => /^(caller|member|provider|patient|customer):/i.test(l)).map(l => l.replace(/^[^:]+:\s*/i, '').trim());
-    const result: SpeakerTurn[] = [];
-    const maxT = Math.max(callerLines.length, aiSentences.length);
-    for (let i = 0; i < maxT; i++) {
-      if (callerLines[i]) result.push({ role: "caller", text: callerLines[i], startTime: i * 9, endTime: i * 9 + 7 });
-      if (aiSentences[i]) result.push({ role: "ai", text: aiSentences[i], startTime: 0, endTime: 0 });
-    }
-    return result;
-  }, [analysis]);
 
   const runReplay = useCallback(async () => {
     abortRef.current = false;
     pauseRef.current = false;
     setPlaying(true); setPaused(false); setCompleted(false); setOverlays([]);
+    setSavings(null);
+    replayStartRef.current = Date.now();
 
     // Decode audio once
     if (!bufRef.current && audioFile) {
@@ -228,7 +239,60 @@ function VoiceReplayPanel({ analysis, audioFile }: { analysis: CallAnalysis; aud
       } catch { console.warn("Could not decode audio"); }
     }
 
-    const conversation = buildConversation();
+    // Build segments from speaker words
+    const words = analysis.speakerWords || [];
+    let baseConversation: SpeakerTurn[] = [];
+
+    if (words.length > 0) {
+      const { segs, agentSpeaker } = buildSegments(words);
+      // Extract caller turns (text only) to send to AI for aligned responses
+      const callerSegs = segs.filter(s => s.speaker !== agentSpeaker);
+      const callerTexts = callerSegs.map(s => s.text);
+
+      // Fetch aligned AI responses for each caller turn
+      setLoadingDialogue(true);
+      const aiResponses = await fetchAlignedDialogue(callerTexts, analysis);
+      setLoadingDialogue(false);
+
+      if (abortRef.current) { setPlaying(false); return; }
+
+      // Interleave: caller turn → AI response, alternating
+      let aiIdx = 0;
+      let callerIdx = 0;
+      for (const seg of segs) {
+        if (seg.speaker === agentSpeaker) {
+          // Replace agent with Penguin AI using aligned response
+          const text = aiResponses[aiIdx] ?? analysis.ai_response_script;
+          aiIdx = Math.min(aiIdx + 1, aiResponses.length - 1);
+          baseConversation.push({ role: "ai", text, startTime: seg.startTime, endTime: seg.endTime });
+        } else {
+          // Real caller audio
+          baseConversation.push({ role: "caller", text: callerSegs[callerIdx]?.text ?? seg.text, startTime: seg.startTime, endTime: seg.endTime });
+          callerIdx++;
+        }
+      }
+    } else {
+      // Fallback: transcript-based
+      const lines = analysis.transcript.split('\n').filter(Boolean);
+      const callerLines = lines.filter(l => /^(caller|member|provider|patient|customer):/i.test(l)).map(l => l.replace(/^[^:]+:\s*/i, '').trim());
+      const aiSentences = (analysis.ai_response_script.match(/[^.!?]+[.!?]+/g) || [analysis.ai_response_script]).map(s => s.trim()).filter(Boolean);
+
+      setLoadingDialogue(true);
+      const aiResponses = callerLines.length > 0
+        ? await fetchAlignedDialogue(callerLines, analysis)
+        : aiSentences;
+      setLoadingDialogue(false);
+
+      if (abortRef.current) { setPlaying(false); return; }
+
+      const maxT = Math.max(callerLines.length, aiResponses.length);
+      for (let i = 0; i < maxT; i++) {
+        if (callerLines[i]) baseConversation.push({ role: "caller", text: callerLines[i], startTime: i * 9, endTime: i * 9 + 7 });
+        if (aiResponses[i]) baseConversation.push({ role: "ai", text: aiResponses[i], startTime: 0, endTime: 0 });
+      }
+    }
+
+    const conversation = baseConversation;
     setTurns(conversation.map(t => ({ role: t.role, text: t.text, state: "pending" })));
 
     let oidx = 0;
@@ -264,9 +328,19 @@ function VoiceReplayPanel({ analysis, audioFile }: { analysis: CallAnalysis; aud
     }
 
     while (oidx < OVERLAYS.length && !abortRef.current) { setOverlays(prev => [...prev, OVERLAYS[oidx++]]); await new Promise(r => setTimeout(r, 300)); }
-    if (!abortRef.current) setCompleted(true);
+    // Calculate savings: original call duration vs AI replay duration
+    if (!abortRef.current) {
+      const aiTimeSec = (Date.now() - replayStartRef.current) / 1000;
+      const originalTimeSec = analysis.avg_handle_time_seconds || 360;
+      const savedSec = Math.max(0, originalTimeSec - aiTimeSec);
+      const savedPct = originalTimeSec > 0 ? (savedSec / originalTimeSec) * 100 : 0;
+      const costManual = analysis.cost_per_call_manual ?? 4.50;
+      const costAI = analysis.cost_per_call_ai ?? 0.65;
+      setSavings({ originalTimeSec, aiTimeSec, savedSec, savedPct, costManual, costAI, savedCost: costManual - costAI });
+      setCompleted(true);
+    }
     setPlaying(false); setPaused(false);
-  }, [audioFile, buildConversation]);
+  }, [audioFile, analysis]);
 
   const handlePause = () => {
     if (activeAudioRef.current) activeAudioRef.current.pause();
@@ -322,6 +396,14 @@ function VoiceReplayPanel({ analysis, audioFile }: { analysis: CallAnalysis; aud
       </div>
 
       <div className="p-4 space-y-3">
+        {/* Loading aligned dialogue indicator */}
+        {loadingDialogue && (
+          <div className="flex items-center justify-center gap-2 py-3 text-[10px] text-primary">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            Generating Penguin AI aligned responses…
+          </div>
+        )}
+
         {!playing && !completed && (
           <>
             <p className="text-[10px] text-muted-foreground text-center leading-relaxed">
@@ -380,19 +462,63 @@ function VoiceReplayPanel({ analysis, audioFile }: { analysis: CallAnalysis; aud
           </div>
         )}
 
-        {/* Task execution */}
+        {/* Task execution + savings */}
         {completed && (
-          <div className="rounded-lg border border-border bg-secondary/10 p-3">
-            <div className="text-[10px] font-semibold text-foreground mb-2 flex items-center gap-1.5">
-              <Cpu className="h-3 w-3 text-primary" /> End-to-End Task Execution — Completed Automatically
+          <div className="space-y-3">
+            <div className="rounded-lg border border-border bg-secondary/10 p-3">
+              <div className="text-[10px] font-semibold text-foreground mb-2 flex items-center gap-1.5">
+                <Cpu className="h-3 w-3 text-primary" /> End-to-End Task Execution — Completed Automatically
+              </div>
+              <div className="grid grid-cols-2 gap-1.5">
+                {TASKS.map((t, i) => (
+                  <div key={i} className="flex items-center gap-1.5 text-[10px] text-foreground animate-in fade-in duration-300" style={{ animationDelay: `${i * 120}ms` }}>
+                    <span>{t.e}</span><span>{t.l}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="grid grid-cols-2 gap-1.5">
-              {TASKS.map((t, i) => (
-                <div key={i} className="flex items-center gap-1.5 text-[10px] text-foreground animate-in fade-in duration-300" style={{ animationDelay: `${i * 120}ms` }}>
-                  <span>{t.e}</span><span>{t.l}</span>
+
+            {/* Time & Cost Savings Summary */}
+            {savings && (
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 p-3 space-y-2">
+                <div className="text-[10px] font-semibold text-emerald-800 flex items-center gap-1.5">
+                  <TrendingUp className="h-3 w-3" /> Penguin AI vs. Human Agent — This Call
                 </div>
-              ))}
-            </div>
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className="bg-card rounded-md p-2 border border-border">
+                    <div className="text-sm font-bold text-muted-foreground">{Math.round(savings.originalTimeSec)}s</div>
+                    <div className="text-[9px] text-muted-foreground">Human Handle Time</div>
+                  </div>
+                  <div className="bg-card rounded-md p-2 border border-emerald-200">
+                    <div className="text-sm font-bold text-emerald-700">{Math.round(savings.aiTimeSec)}s</div>
+                    <div className="text-[9px] text-muted-foreground">Penguin AI Time</div>
+                  </div>
+                  <div className="bg-card rounded-md p-2 border border-emerald-200">
+                    <div className="text-sm font-bold text-emerald-700">{Math.round(savings.savedPct)}%</div>
+                    <div className="text-[9px] text-muted-foreground">Faster</div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className="bg-card rounded-md p-2 border border-border">
+                    <div className="text-sm font-bold text-destructive">${savings.costManual.toFixed(2)}</div>
+                    <div className="text-[9px] text-muted-foreground">Manual Cost</div>
+                  </div>
+                  <div className="bg-card rounded-md p-2 border border-emerald-200">
+                    <div className="text-sm font-bold text-emerald-700">${savings.costAI.toFixed(2)}</div>
+                    <div className="text-[9px] text-muted-foreground">AI Cost</div>
+                  </div>
+                  <div className="bg-card rounded-md p-2 border border-emerald-200">
+                    <div className="text-sm font-bold text-emerald-700">${savings.savedCost.toFixed(2)}</div>
+                    <div className="text-[9px] text-muted-foreground">Saved / Call</div>
+                  </div>
+                </div>
+                <div className="text-center pt-1 border-t border-emerald-100">
+                  <span className="text-[10px] text-emerald-700 font-medium">
+                    At 5,000 calls/mo → <span className="font-bold text-emerald-800">${(savings.savedCost * 5000 * 12 / 1000).toFixed(0)}K annual savings</span>
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
