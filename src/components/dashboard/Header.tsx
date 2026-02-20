@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useDashboard, type DashboardTab, type DeploymentMode } from "@/contexts/DashboardContext";
-import { SlidersHorizontal, Shield, Eye, RefreshCw, Phone, FileText, Globe, TrendingUp, Play, Monitor, Plug, Info } from "lucide-react";
+import { SlidersHorizontal, Shield, RefreshCw, Phone, FileText, Globe, TrendingUp, Play, Monitor, Plug, Info } from "lucide-react";
 import { type VolumePreset } from "@/lib/roi-calculations";
 import { ScenarioSelector } from "./ScenarioSelector";
 import { DeploymentComparison } from "./embedded/DeploymentComparison";
@@ -128,25 +128,10 @@ export function Header() {
           <div className="flex items-center bg-secondary rounded-md p-0.5 gap-0.5">
             <button
               onClick={() => setMode("internal")}
-              className={`flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium rounded transition-all ${
-                mode === "internal"
-                  ? "reflect-gradient text-white"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
+              className={`flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium rounded transition-all reflect-gradient text-white`}
             >
               <Shield className="h-2.5 w-2.5" />
               Internal
-            </button>
-            <button
-              onClick={() => setMode("tpa-demo")}
-              className={`flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium rounded transition-all ${
-                mode === "tpa-demo"
-                  ? "reflect-gradient text-white"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Eye className="h-2.5 w-2.5" />
-              TPA Demo
             </button>
           </div>
 

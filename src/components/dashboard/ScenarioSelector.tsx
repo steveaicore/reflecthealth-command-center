@@ -11,9 +11,9 @@ interface Scenario {
 }
 
 const SCENARIOS: Scenario[] = [
-  { label: "Large Regional TPA", preset: "high", description: "40.6K calls, 42K claims/mo" },
-  { label: "Reflect Baseline", preset: "medium", description: "29K calls, 30K claims/mo" },
-  { label: "Cost-Constrained Client", preset: "low", description: "20.3K calls, 21K claims/mo" },
+  { label: "Enterprise", preset: "high", description: "40K calls | 42K claims/mo" },
+  { label: "Baseline", preset: "medium", description: "29K calls | 30K claims/mo" },
+  { label: "Lean", preset: "low", description: "20K calls | 21K claims/mo" },
 ];
 
 export function ScenarioSelector() {
@@ -74,7 +74,7 @@ export function ScenarioSelector() {
           >
             <div className="p-2 pb-1">
               <span className="text-[9px] font-semibold uppercase tracking-[0.15em] text-muted-foreground px-1">
-                Simulate Client Scenario
+                Select Scenario
               </span>
             </div>
             {SCENARIOS.map((s) => (
@@ -83,7 +83,10 @@ export function ScenarioSelector() {
                 onClick={() => { setPreset(s.preset); setOpen(false); }}
                 className="w-full text-left px-3 py-2 hover:bg-secondary/50 transition-colors first:rounded-t last:rounded-b"
               >
-                <span className="text-[11px] font-medium text-foreground block">{s.label}</span>
+                <span className="text-[11px] font-medium text-foreground block">
+                  {s.label}
+                  {s.preset === "medium" && <span className="text-[9px] text-muted-foreground ml-1.5">(Default)</span>}
+                </span>
                 <span className="text-[9px] text-muted-foreground">{s.description}</span>
               </button>
             ))}
