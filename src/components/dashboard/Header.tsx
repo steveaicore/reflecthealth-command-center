@@ -5,7 +5,7 @@ import { type VolumePreset } from "@/lib/roi-calculations";
 import { ScenarioSelector } from "./ScenarioSelector";
 import { DeploymentComparison } from "./embedded/DeploymentComparison";
 import { ExecutivePlaybackModal } from "./ExecutivePlaybackModal";
-import penguinLogo from "@/assets/penguin-ai-logo.png";
+import penguinLogo from "@/assets/penguin-icon.png";
 import reflectLogo from "@/assets/reflect-health-logo.png";
 
 const presetLabels: Record<VolumePreset, string> = {
@@ -93,7 +93,7 @@ export function Header() {
           >
             <Info className="h-3.5 w-3.5" />
           </button>
-          <img src={penguinLogo} alt="Penguin AI" className="h-4 opacity-40" />
+          <img src={penguinLogo} alt="Penguin AI" className="h-6 w-6 object-contain opacity-60" />
         </div>
       </div>
 

@@ -3,7 +3,7 @@ import { Circle, ChevronDown, Monitor, Download } from "lucide-react";
 import { useDashboard } from "@/contexts/DashboardContext";
 import { useAudioEngine } from "@/contexts/AudioEngineContext";
 import { ExportSummary } from "../ExportSummary";
-import penguinLogo from "@/assets/penguin-ai-logo.png";
+import penguinLogo from "@/assets/penguin-icon.png";
 import type { Five9Tab } from "./Five9Layout";
 
 interface Five9HeaderProps {
@@ -98,7 +98,7 @@ export function Five9Header({ activeTab, setActiveTab }: Five9HeaderProps) { // 
         <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-[10px] text-white font-semibold">
           JD
         </div>
-        <img src={penguinLogo} alt="Penguin AI" className="h-3.5 opacity-50" />
+        <img src={penguinLogo} alt="Penguin AI" className="h-6 w-6 object-contain opacity-70" />
       </div>
 
       <ExportSummary open={exportOpen} onClose={() => setExportOpen(false)} type="five9" />
