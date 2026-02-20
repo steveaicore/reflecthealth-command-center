@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useSimulation } from "@/contexts/SimulationContext";
 import { useDashboard } from "@/contexts/DashboardContext";
 import { Five9Sidebar } from "./Five9Sidebar";
 import { Five9Header } from "./Five9Header";
