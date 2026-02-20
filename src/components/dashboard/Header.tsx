@@ -14,11 +14,11 @@ const presetLabels: Record<VolumePreset, string> = {
   high: "High",
 };
 
-const tabs: { id: DashboardTab; label: string; icon: React.ReactNode }[] = [
-  { id: "contact", label: "Contact Intelligence", icon: <Phone className="h-3.5 w-3.5" /> },
-  { id: "claims", label: "Claims Automation", icon: <FileText className="h-3.5 w-3.5" /> },
-  { id: "network", label: "Network & Marketplace", icon: <Globe className="h-3.5 w-3.5" /> },
-  { id: "roi", label: "Executive ROI", icon: <TrendingUp className="h-3.5 w-3.5" /> },
+const tabs: { id: DashboardTab; label: string; subtitle: string; icon: React.ReactNode }[] = [
+  { id: "contact", label: "Contact Intelligence", subtitle: "Member & Provider Interaction Automation", icon: <Phone className="h-3.5 w-3.5" /> },
+  { id: "claims", label: "Claims Automation", subtitle: "Adjudication & Review Intelligence", icon: <FileText className="h-3.5 w-3.5" /> },
+  { id: "network", label: "Network & Marketplace", subtitle: "Contract & Ecosystem Optimization", icon: <Globe className="h-3.5 w-3.5" /> },
+  { id: "roi", label: "Executive ROI", subtitle: "Financial Performance Orchestration", icon: <TrendingUp className="h-3.5 w-3.5" /> },
 ];
 
 function SyncIndicator() {
