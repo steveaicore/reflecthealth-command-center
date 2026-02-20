@@ -81,10 +81,18 @@ Deno.serve(async (req) => {
       fullTranscript = result.text || '';
     }
 
+    // Normalize words: map speaker_id → speaker so the frontend can read w.speaker
+    const normalizedWords = (result.words || []).map((w: Record<string, unknown>) => ({
+      text: w.text ?? '',
+      start: w.start ?? 0,
+      end: w.end ?? 0,
+      speaker: (w.speaker_id ?? w.speaker ?? 'speaker_0') as string,
+    }));
+
     return new Response(JSON.stringify({
       transcript: fullTranscript || result.text,
       raw_text: result.text,
-      words: result.words,
+      words: normalizedWords,
       speakers,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

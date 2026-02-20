@@ -161,9 +161,10 @@ function VoiceReplayPanel({ analysis, audioFile }: { analysis: CallAnalysis; aud
       if (txt.trim()) segs.push({ speaker: cur, text: txt.trim(), startTime: s0, endTime: s1 });
 
       // Identify which speaker label is the AGENT (rep) vs CALLER (customer).
-      // Heuristic: the agent typically uses formal language like "how can I help",
-      // "thank you for calling", "your account", "policy number", etc.
-      // We tally agent-like phrase hits per speaker to determine who is who.
+      // In ElevenLabs diarization, speaker_0 is the FIRST speaker to talk.
+      // In call center recordings the AGENT typically answers first ("Thank you for calling...").
+      // So speaker_0 = agent, speaker_1 = caller is the most common pattern.
+      // We verify this by scoring agent-like phrases and use it as a confidence check.
       const agentPhrases = /how can i (help|assist)|thank you for calling|this is .{2,20} (from|with|at)|your (account|policy|claim|coverage|member|benefit)|let me (pull|look|check|verify)|i('ve| have) (located|found|confirmed|verified)|have a great|is there anything else/i;
       const speakerScores: Record<string, number> = {};
       for (const seg of segs) {
@@ -171,11 +172,10 @@ function VoiceReplayPanel({ analysis, audioFile }: { analysis: CallAnalysis; aud
         if (agentPhrases.test(seg.text)) speakerScores[seg.speaker]++;
       }
 
-      // The speaker with the highest agent-phrase score is the agent/rep.
-      // If tied or no matches, fall back to speaker_01 (second speaker) as agent,
-      // since call center recordings typically start with the rep answering.
       const allSpeakers = [...new Set(segs.map(s => s.speaker))];
-      let agentSpeaker = allSpeakers[0]; // default
+
+      // Find speaker with highest agent-phrase score
+      let agentSpeaker = allSpeakers[0];
       let topScore = -1;
       for (const sp of allSpeakers) {
         if ((speakerScores[sp] ?? 0) > topScore) {
@@ -183,11 +183,10 @@ function VoiceReplayPanel({ analysis, audioFile }: { analysis: CallAnalysis; aud
           agentSpeaker = sp;
         }
       }
-      // If no clear winner from phrases, treat speaker_01 as agent (rep answered first → speaker_00 = rep in many recordings)
-      // but only if there are exactly 2 speakers and no phrase hits
-      if (topScore === 0 && allSpeakers.length >= 2) {
-        // Pick the speaker who is NOT speaker_00 as agent — caller is usually speaker_00 in ElevenLabs diarization
-        agentSpeaker = allSpeakers.find(s => s !== "speaker_00") ?? allSpeakers[1];
+
+      // If no phrase hits, default to speaker_0 as agent (they answered the call)
+      if (topScore === 0) {
+        agentSpeaker = allSpeakers[0]; // speaker_0 = first speaker = agent
       }
 
       // Map segments: agent → "ai" (will get Penguin TTS), other → "caller" (real audio)
