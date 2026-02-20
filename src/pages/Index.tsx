@@ -4,7 +4,7 @@ import { SimulationProvider } from "@/contexts/SimulationContext";
 import { AudioEngineProvider } from "@/contexts/AudioEngineContext";
 import { Header } from "@/components/dashboard/Header";
 import { ControlsDrawer } from "@/components/dashboard/ControlsDrawer";
-import { KPISidebar } from "@/components/dashboard/KPISidebar";
+import { KPISidebar, KPITriggerButton } from "@/components/dashboard/KPISidebar";
 import { Module1 } from "@/components/dashboard/Module1";
 import { Module2 } from "@/components/dashboard/Module2";
 import { Module3 } from "@/components/dashboard/Module3";
@@ -19,6 +19,7 @@ import { TransitionOverlay } from "@/components/dashboard/embedded/TransitionOve
 function DashboardContent() {
   const { activeTab, deploymentMode } = useDashboard();
   const [showTransition, setShowTransition] = useState(false);
+  const [metricsOpen, setMetricsOpen] = useState(false);
   const prevMode = useRef(deploymentMode);
 
   useEffect(() => {
@@ -39,7 +40,7 @@ function DashboardContent() {
           <OpynHealthLayout />
         ) : (
           <div className="min-h-screen flex flex-col bg-background">
-            <Header />
+            <Header metricsOpen={metricsOpen} onToggleMetrics={() => setMetricsOpen((o) => !o)} />
             <div className="flex flex-1 overflow-hidden">
               <main className="flex-1 overflow-y-auto p-5 space-y-6">
                 <LiveOrchestration />
@@ -49,10 +50,10 @@ function DashboardContent() {
                 {activeTab === "roi" && <ExecutiveROI />}
                 {activeTab === "intelligence" && <Module5 />}
               </main>
-              <KPISidebar />
             </div>
             <DashboardFooter />
             <ControlsDrawer />
+            <KPISidebar open={metricsOpen} onClose={() => setMetricsOpen(false)} />
           </div>
         )}
       </AudioEngineProvider>

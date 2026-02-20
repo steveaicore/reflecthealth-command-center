@@ -5,6 +5,7 @@ import { type VolumePreset } from "@/lib/roi-calculations";
 import { ScenarioSelector } from "./ScenarioSelector";
 import { DeploymentComparison } from "./embedded/DeploymentComparison";
 import { ExecutivePlaybackModal } from "./ExecutivePlaybackModal";
+import { KPITriggerButton } from "./KPISidebar";
 import penguinLogo from "@/assets/penguin-icon.png";
 import reflectLogo from "@/assets/reflect-health-logo.png";
 
@@ -33,7 +34,7 @@ function SyncIndicator() {
   );
 }
 
-export function Header() {
+export function Header({ metricsOpen, onToggleMetrics }: { metricsOpen?: boolean; onToggleMetrics?: () => void }) {
   const { mode, setMode, preset, setPreset, setDrawerOpen, activeTab, setActiveTab, deploymentMode, setDeploymentMode } = useDashboard();
   const [comparisonOpen, setComparisonOpen] = useState(false);
   const [playbackOpen, setPlaybackOpen] = useState(false);
@@ -146,6 +147,10 @@ export function Header() {
               Internal
             </button>
           </div>
+
+          {onToggleMetrics && (
+            <KPITriggerButton onClick={onToggleMetrics} />
+          )}
 
           <button
             onClick={() => setDrawerOpen(true)}
