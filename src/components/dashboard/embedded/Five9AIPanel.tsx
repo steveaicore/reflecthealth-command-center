@@ -76,7 +76,10 @@ export function Five9AIPanel() {
         className="five9-card p-2.5 space-y-2 w-full text-left hover:border-five9-accent/30 transition-colors"
       >
         <div className="flex items-center justify-between">
-          <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-five9-muted">Confidence</span>
+          <div className="flex items-center gap-1">
+            <img src={penguinLogo} alt="Penguin AI" className="h-3 w-3 object-contain" />
+            <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-five9-muted">Confidence</span>
+          </div>
           <span className={`text-sm font-bold font-mono ${
             pipeline.confidence > callParams.accuracyPct * 100 ? "text-emerald-600" : "text-amber-600"
           }`}>

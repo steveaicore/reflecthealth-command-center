@@ -145,7 +145,7 @@ function generateEvent(eligiblePct: number, accuracyPct: number): SimEvent {
   const reason = reasonForType(callerType);
   const payer = PAYERS[Math.floor(Math.random() * PAYERS.length)];
   const aiResolved = Math.random() < (eligiblePct * accuracyPct);
-  const confidence = aiResolved ? 85 + Math.random() * 13 : 40 + Math.random() * 30;
+  const confidence = aiResolved ? 85 + Math.random() * 13 : 85 + Math.random() * 10;
   let status: EventStatus;
   if (aiResolved) {
     status = Math.random() > 0.3 ? "ai-routed" : "resolved";
@@ -170,7 +170,7 @@ function generateClaimsEvent(): ClaimsEvent {
     timestamp: new Date(),
     claimId: CLAIM_IDS(),
     type: CLAIMS_TYPES[Math.floor(Math.random() * CLAIMS_TYPES.length)],
-    confidence: isAuto ? 88 + Math.random() * 10 : 50 + Math.random() * 30,
+    confidence: isAuto ? 88 + Math.random() * 10 : 85 + Math.random() * 10,
     adjudicationTimeSec: isAuto ? 1 + Math.random() * 4 : 15 + Math.random() * 45,
     manualReviewAvoided: isAuto,
     status: isException ? "exception" : isAuto ? "auto" : "manual",
