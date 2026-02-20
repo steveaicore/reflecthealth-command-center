@@ -28,12 +28,24 @@ export function Five9AIPanel() {
     setDraftSent(false);
   }, [activeEvent?.id]);
 
+  const REASON_RESPONSES: Record<string, string> = {
+    "Benefits Verification": `Member is active under ${activeEvent?.payer || "BCBS"} PPO. In-network specialist copay is $30. Deductible: $1,112 of $1,500 met (74%). No balance issues. Coverage confirmed through 12/31/2026.`,
+    "Eligibility Inquiry": `Eligibility confirmed for ${activeEvent?.payer || "BCBS"}. Plan status: Active. Effective date: 01/01/2026. PCP assignment on file. No lapse in coverage detected.`,
+    "Claim Status": `Claim processed and paid on 2/12/2026. Allowed amount: $285.00. ${activeEvent?.payer || "BCBS"} paid $228.00 (80%). Member responsibility: $57.00 copay. EOB mailed 2/14/2026.`,
+    "Prior Authorization Verification": `PA #PA-2026-44821 approved for CPT 27447. Valid through 04/15/2026. In-network facility required. No step therapy needed. Member cost share: $8,000 estimated OOP.`,
+    "Coordination of Benefits Verification": `COB verified. Primary: ${activeEvent?.payer || "BCBS"}. Secondary: Medicare Part B. Primary pays 80% of allowed amount. Submit EOB to secondary for remaining balance.`,
+    "Referral Validation": `Referral #RF-8821 on file from PCP Dr. Martinez. Valid for 3 specialist visits through 06/30/2026. In-network orthopedic providers only. No additional referral needed.`,
+    "Appeal Status Inquiry": `Appeal #AP-2026-1193 received 2/10/2026. Currently under medical director review. Expected determination by 2/25/2026. Original denial reason: CO-18 (Duplicate Claim).`,
+    "Timely Filing Question": `Timely filing limit for ${activeEvent?.payer || "BCBS"}: 180 days from date of service. Claims submitted after deadline require written exception with supporting documentation.`,
+    "Claim Reprocessing Request": `Claim reprocessing initiated for #CLM-4821. Original denial: incorrect modifier. Corrected claim submitted with modifier -59. Expected turnaround: 5-7 business days.`,
+    "Claims Status": `Your claim for date of service 1/28/2026 has been processed. ${activeEvent?.payer || "BCBS"} paid $195.00. Your responsibility: $30.00 copay. Payment issued to provider on 2/10/2026.`,
+    "ID Card Request": `New ID card has been ordered and will arrive within 5-7 business days. In the meantime, a digital ID card is available in the ${activeEvent?.payer || "BCBS"} member portal and mobile app.`,
+    "Deductible / OOP Balance Inquiry": `Current deductible status: $1,112 of $1,500 met (74%). Out-of-pocket maximum: $2,840 of $6,500 applied (44%). All amounts reflect claims processed through today.`,
+    "Pharmacy Coverage Question": `Prescription is covered under your ${activeEvent?.payer || "BCBS"} formulary. Tier 2 — Preferred Brand. Copay: $35 for 30-day supply. Mail order (90-day): $70. No prior auth required.`,
+  };
+
   const suggestedResponse = activeEvent
-    ? `Based on policy section 7.4, the ${activeEvent.reason.toLowerCase()} for ${activeEvent.payer} is confirmed. ${
-        activeEvent.status === "ai-routed" || activeEvent.status === "resolved"
-          ? "No further action needed."
-          : "Recommend agent review for edge case."
-      }`
+    ? REASON_RESPONSES[activeEvent.reason] || `Based on policy guidelines, the ${activeEvent.reason.toLowerCase()} request for ${activeEvent.payer} has been verified. All documentation is in order. No further action required.`
     : "";
 
   const complianceFlags = [
@@ -104,8 +116,20 @@ export function Five9AIPanel() {
         </div>
       </button>
 
+      {/* Recommended Response */}
+      {activeEvent && (
+        <div className="five9-card p-2.5 space-y-2 five9-active-border">
+          <div className="flex items-center gap-1.5">
+            <img src={penguinLogo} alt="Penguin AI" className="h-4 w-4 object-contain" />
+            <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-five9-muted">
+              Recommended Response
+            </span>
+          </div>
+          <p className="text-[11px] text-foreground leading-relaxed">{suggestedResponse}</p>
+        </div>
+      )}
 
-      {/* Compliance - Clickable */}
+
       <button
         onClick={() => setComplianceModalOpen(true)}
         className="five9-card p-2.5 space-y-2 w-full text-left hover:border-five9-accent/30 transition-colors"
