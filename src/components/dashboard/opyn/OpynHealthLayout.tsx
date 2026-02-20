@@ -60,7 +60,7 @@ function MemberBenefitAssistant() {
 
           {/* AI response */}
           <div className="flex gap-2">
-            <img src={penguinLogo} alt="AI" className="h-5 w-5 mt-1 rounded-full" />
+            <img src={penguinLogo} alt="AI" className="h-6 w-6 mt-1 object-contain" />
             <div className="bg-[hsl(var(--opyn-green-light))] rounded-2xl rounded-bl-sm px-3.5 py-2.5 max-w-[85%] space-y-2">
               <p className="text-[11px] text-foreground">
                 Great question! Based on your Blue Cross PPO plan, here's your current status:
