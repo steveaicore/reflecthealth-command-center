@@ -167,7 +167,7 @@ function Pipeline({ stages, pipeline }: { stages: string[]; pipeline: { activeSt
   return (
     <div className="flex flex-col gap-2 flex-1">
       <span className="type-micro uppercase tracking-[0.15em] text-muted-foreground section-header-accent">AI Orchestration Flow</span>
-      <div className="flow-bg rounded-lg p-3 border border-border relative flex-1 flex flex-col justify-between">
+      <div className="flow-bg rounded-lg p-3 border border-border flex flex-col gap-3">
         <div className="flex items-center gap-1 flex-wrap">
           {stages.map((stage, i) => (
             <div key={stage} className="flex items-center gap-1 shrink-0">
@@ -180,7 +180,7 @@ function Pipeline({ stages, pipeline }: { stages: string[]; pipeline: { activeSt
             </div>
           ))}
         </div>
-        <div className="flex items-center gap-4 mt-3 pt-3 border-t border-border">
+        <div className="flex items-center gap-4 pt-2 border-t border-border">
           <span className="type-body">Confidence: <span className="font-mono font-semibold text-foreground">{pipeline.confidence}%</span></span>
           <span className="type-body">Processing: <span className="font-mono font-semibold text-foreground">{pipeline.resolutionTime}s</span></span>
           <span className="type-body">Outcome: <span className={`font-semibold ${pipeline.outcome === "Escalated" || pipeline.outcome === "Exception" ? "text-amber-600" : "text-primary"}`}>{pipeline.outcome}</span></span>
