@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useDashboard, type DashboardTab, type DeploymentMode } from "@/contexts/DashboardContext";
-import { useSimulation } from "@/contexts/SimulationContext";
-import { SlidersHorizontal, Shield, Eye, RefreshCw, Phone, FileText, Globe, TrendingUp, Volume2, VolumeX, Monitor, Plug, Info } from "lucide-react";
+import { SlidersHorizontal, Shield, Eye, RefreshCw, Phone, FileText, Globe, TrendingUp, Play, Monitor, Plug, Info } from "lucide-react";
 import { type VolumePreset } from "@/lib/roi-calculations";
 import { ScenarioSelector } from "./ScenarioSelector";
 import { DeploymentComparison } from "./embedded/DeploymentComparison";
+import { ExecutivePlaybackModal } from "./ExecutivePlaybackModal";
 import penguinLogo from "@/assets/penguin-ai-logo.png";
 import reflectLogo from "@/assets/reflect-health-logo.png";
 
@@ -32,26 +32,10 @@ function SyncIndicator() {
   );
 }
 
-function ImmersiveToggle() {
-  const { audioEnabled, setAudioEnabled } = useSimulation();
-  return (
-    <button
-      onClick={() => setAudioEnabled(!audioEnabled)}
-      className={`flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium rounded transition-all ${
-        audioEnabled
-          ? "reflect-gradient text-white"
-          : "bg-secondary text-muted-foreground hover:text-foreground"
-      }`}
-    >
-      {audioEnabled ? <Volume2 className="h-3 w-3" /> : <VolumeX className="h-3 w-3" />}
-      Immersive Demo
-    </button>
-  );
-}
-
 export function Header() {
   const { mode, setMode, preset, setPreset, setDrawerOpen, activeTab, setActiveTab, deploymentMode, setDeploymentMode } = useDashboard();
   const [comparisonOpen, setComparisonOpen] = useState(false);
+  const [playbackOpen, setPlaybackOpen] = useState(false);
 
   return (
     <header className="border-b border-border bg-card/90 backdrop-blur-sm">
@@ -108,7 +92,13 @@ export function Header() {
         </div>
 
         <div className="flex items-center gap-2">
-          <ImmersiveToggle />
+          <button
+            onClick={() => setPlaybackOpen(true)}
+            className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium rounded bg-secondary text-muted-foreground hover:text-foreground transition-all"
+          >
+            <Play className="h-3 w-3" />
+            Play AI Interaction
+          </button>
 
           <ScenarioSelector />
 
@@ -189,6 +179,7 @@ export function Header() {
       </div>
 
       <DeploymentComparison open={comparisonOpen} onClose={() => setComparisonOpen(false)} />
+      <ExecutivePlaybackModal open={playbackOpen} onClose={() => setPlaybackOpen(false)} />
     </header>
   );
 }
