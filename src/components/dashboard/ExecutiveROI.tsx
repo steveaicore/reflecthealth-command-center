@@ -22,7 +22,7 @@ export function ExecutiveROI() {
   }));
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* Walkthrough button */}
       <div className="flex items-center justify-between">
         <span className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
@@ -35,7 +35,7 @@ export function ExecutiveROI() {
 
       {/* Hero metrics — clickable */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <button id="total-savings" className="metric-card flex flex-col gap-1.5 reflect-border text-left hover:border-primary/40 transition-colors" onClick={() => setBreakdownMetric("savings")}>
+        <button id="total-savings" className="metric-card flex flex-col gap-1.5 reflect-border text-left hover:border-primary/40 transition-colors tint-savings" onClick={() => setBreakdownMetric("savings")}>
           <div className="flex items-center justify-between">
             <span className="metric-label">Total Annual Savings</span>
             <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
@@ -65,7 +65,7 @@ export function ExecutiveROI() {
             icon={<Clock className="h-3.5 w-3.5" />}
           />
         </button>
-        <button id="fte-reduction" className="text-left hover:border-primary/40 transition-colors rounded-lg" onClick={() => setBreakdownMetric("fte")}>
+        <button id="fte-reduction" className="text-left hover:border-primary/40 transition-colors rounded-lg tint-fte" onClick={() => setBreakdownMetric("fte")}>
           <MetricCard
             label="Total FTE Reduction"
             value={fmtDecimal(callCenter.fteSaved + claims.fteSaved)}

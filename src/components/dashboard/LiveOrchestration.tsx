@@ -53,15 +53,15 @@ function ContactFeed() {
   const [selectedEvent, setSelectedEvent] = useState<SimEvent | null>(null);
 
   const STATUS_CONFIG = {
-    "ai-routed": { label: "Routed to AI", className: "text-primary bg-primary/10" },
-    "escalated": { label: "Escalated", className: "text-amber-600 bg-amber-50" },
-    "resolved": { label: "Resolved", className: "text-emerald-600 bg-emerald-50" },
+    "ai-routed": { label: "Routed to AI", className: "text-primary bg-primary/10 status-badge-pulse" },
+    "escalated": { label: "Escalated", className: "text-amber-600 bg-amber-50 status-badge-pulse" },
+    "resolved": { label: "Resolved", className: "text-emerald-600 bg-emerald-50 status-badge-pulse" },
     "in-progress": { label: "In Progress", className: "text-muted-foreground bg-secondary" },
   };
 
   return (
     <div className="flex flex-col gap-1 overflow-hidden max-h-[200px]">
-      <span className="text-[9px] font-semibold uppercase tracking-[0.15em] text-muted-foreground mb-1">Live Event Feed</span>
+      <span className="text-[9px] font-semibold uppercase tracking-[0.15em] text-muted-foreground section-header-accent mb-1">Live Event Feed</span>
       {events.slice(0, 6).map((evt) => {
         const status = STATUS_CONFIG[evt.status];
         return (
@@ -166,7 +166,7 @@ function ROIFeed() {
 function Pipeline({ stages, pipeline }: { stages: string[]; pipeline: { activeStage: number; confidence: number; resolutionTime: number; outcome: string } }) {
   return (
     <div className="flex flex-col gap-2">
-      <span className="text-[9px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">AI Orchestration Flow</span>
+      <span className="text-[9px] font-semibold uppercase tracking-[0.15em] text-muted-foreground section-header-accent">AI Orchestration Flow</span>
       <div className="flow-bg rounded-lg p-3 border border-border relative">
         <div className="flex items-center gap-1 flex-wrap">
           {stages.map((stage, i) => (
@@ -242,12 +242,19 @@ function ROIMetrics() {
 }
 
 function MetricsGrid({ items }: { items: { label: string; value: number; formatter: (n: number) => string; icon: React.ReactNode }[] }) {
+  const getTint = (label: string) => {
+    if (/saving|cost|roi/i.test(label)) return "tint-savings";
+    if (/fte|workforce/i.test(label)) return "tint-fte";
+    if (/call|cycle|volume|orchestr/i.test(label)) return "tint-calls";
+    return "";
+  };
+
   return (
     <div className="flex flex-col gap-1.5">
-      <span className="text-[9px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">Live Impact (Today)</span>
-      <div className={`grid ${items.length > 4 ? "grid-cols-3" : "grid-cols-2"} gap-2`}>
+      <span className="text-[9px] font-semibold uppercase tracking-[0.15em] text-muted-foreground section-header-accent">Live Impact (Today)</span>
+      <div className={`grid ${items.length > 4 ? "grid-cols-3" : "grid-cols-2"} gap-2 live-impact-bg relative`}>
         {items.map((item) => (
-          <div key={item.label} className="metric-card flex flex-col gap-1 p-2.5 reflect-border">
+          <div key={item.label} className={`metric-card flex flex-col gap-1 p-2.5 reflect-border relative z-10 ${getTint(item.label)}`}>
             <div className="flex items-center gap-1.5">
               <span className="text-primary">{item.icon}</span>
               <span className="text-[9px] text-muted-foreground">{item.label}</span>
@@ -292,19 +299,21 @@ export function LiveOrchestration() {
   };
 
   return (
-    <div className="module-panel p-4 space-y-3">
-      <div className="flex items-center gap-2 mb-1">
-        <div className="status-dot" />
-        <span className="text-primary">{config.icon}</span>
-        <div>
-          <span className="text-xs font-semibold text-foreground">{config.title}</span>
-          <span className="ml-2 text-[10px] text-muted-foreground">{config.subtitle}</span>
+    <div className="section-container">
+      <div className="module-panel p-4 space-y-4">
+        <div className="flex items-center gap-2 mb-1">
+          <div className="status-dot" />
+          <span className="text-primary">{config.icon}</span>
+          <div>
+            <span className="text-xs font-semibold text-foreground">{config.title}</span>
+            <span className="ml-2 text-[10px] text-muted-foreground">{config.subtitle}</span>
+          </div>
         </div>
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {feedMap[activeTab]}
-        <Pipeline stages={config.pipelineStages} pipeline={pipelineMap[activeTab]} />
-        {metricsMap[activeTab]}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {feedMap[activeTab]}
+          <Pipeline stages={config.pipelineStages} pipeline={pipelineMap[activeTab]} />
+          {metricsMap[activeTab]}
+        </div>
       </div>
     </div>
   );
