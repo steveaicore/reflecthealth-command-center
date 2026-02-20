@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useDashboard } from "@/contexts/DashboardContext";
 import { Monitor, User, Building2, MessageCircle, Search, Shield, Activity, ChevronRight, CheckCircle, AlertTriangle, Zap, Phone } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import penguinLogo from "@/assets/penguin-ai-logo.png";
+import penguinLogo from "@/assets/penguin-logo-pink.png";
 
 type OpynMode = "member" | "provider";
 
