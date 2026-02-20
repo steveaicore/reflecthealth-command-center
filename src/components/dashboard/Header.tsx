@@ -15,10 +15,10 @@ const presetLabels: Record<VolumePreset, string> = {
 };
 
 const tabs: { id: DashboardTab; label: string; subtitle: string; icon: React.ReactNode }[] = [
-  { id: "contact", label: "Contact Intelligence", subtitle: "Member & Provider Interaction Automation", icon: <Phone className="h-3.5 w-3.5" /> },
-  { id: "claims", label: "Claims Automation", subtitle: "Adjudication & Review Intelligence", icon: <FileText className="h-3.5 w-3.5" /> },
-  { id: "network", label: "Network & Marketplace", subtitle: "Contract & Ecosystem Optimization", icon: <Globe className="h-3.5 w-3.5" /> },
-  { id: "roi", label: "Executive ROI", subtitle: "Financial Performance Orchestration", icon: <TrendingUp className="h-3.5 w-3.5" /> },
+  { id: "contact", label: "Interaction Orchestration", subtitle: "Member & Provider Interaction Automation", icon: <Phone className="h-3.5 w-3.5" /> },
+  { id: "claims", label: "Claims Orchestration", subtitle: "Adjudication & Review Intelligence", icon: <FileText className="h-3.5 w-3.5" /> },
+  { id: "network", label: "Network Intelligence", subtitle: "Contract & Ecosystem Optimization", icon: <Globe className="h-3.5 w-3.5" /> },
+  { id: "roi", label: "Financial Command Center", subtitle: "Financial Performance Orchestration", icon: <TrendingUp className="h-3.5 w-3.5" /> },
 ];
 
 function SyncIndicator() {
@@ -44,7 +44,7 @@ export function Header() {
         <div className="flex items-center gap-3">
           <img src={reflectLogo} alt="Reflect Health" className="h-8" />
           <span className="hidden md:inline text-[10px] text-muted-foreground border-l border-border pl-3">
-            Operational Intelligence for the Benefits Hub
+            AI Orchestration Command Center
           </span>
         </div>
 
@@ -97,7 +97,7 @@ export function Header() {
             className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium rounded bg-gradient-to-r from-[hsl(340,80%,55%)] to-[hsl(25,95%,55%)] text-white hover:opacity-90 transition-all"
           >
             <Play className="h-3 w-3" />
-            Launch AI Call Deflection
+            Simulate AI Orchestration
           </button>
 
           <ScenarioSelector />

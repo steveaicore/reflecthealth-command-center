@@ -11,8 +11,8 @@ export function FloatingROIWidget() {
   const items = [
     { label: "Calls Assisted", value: counters.callsDeflected, formatter: (n: number) => Math.round(n).toString(), icon: <Zap className="h-3 w-3" /> },
     { label: "Minutes Saved", value: counters.manualMinutesSaved, formatter: (n: number) => fmtDecimal(n, 0), icon: <Clock className="h-3 w-3" /> },
-    { label: "Escalations Reduced", value: Math.round(counters.callsDeflected * 0.4), formatter: (n: number) => Math.round(n).toString(), icon: <TrendingDown className="h-3 w-3" /> },
-    { label: "Cost Avoided", value: counters.costAvoided, formatter: fmtCurrency, icon: <DollarSign className="h-3 w-3" /> },
+    { label: "Escalations Prevented", value: Math.round(counters.callsDeflected * 0.4), formatter: (n: number) => Math.round(n).toString(), icon: <TrendingDown className="h-3 w-3" /> },
+    { label: "Cost Impact", value: counters.costAvoided, formatter: fmtCurrency, icon: <DollarSign className="h-3 w-3" /> },
   ];
 
   return (

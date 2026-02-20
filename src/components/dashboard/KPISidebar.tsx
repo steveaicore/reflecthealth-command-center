@@ -87,7 +87,7 @@ export function KPISidebar() {
   return (
     <aside className="w-[220px] border-l border-border bg-card p-3 flex flex-col gap-2 overflow-y-auto shrink-0 hidden xl:flex">
       <span className="text-[9px] font-semibold uppercase tracking-[0.15em] reflect-gradient-text mb-1">
-        Live Operational Impact
+        Live Command Metrics
       </span>
 
       {kpis.map((kpi) => (

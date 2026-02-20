@@ -365,7 +365,7 @@ export function LiveCallSimulation() {
             <span className="font-medium text-emerald-600">Call Deflected</span>
             <span className="text-five9-muted">Confidence:</span>
             <span className="font-medium font-mono text-foreground">{callConfidence}%</span>
-            <span className="text-five9-muted">Cost Avoided:</span>
+             <span className="text-five9-muted">Cost Impact:</span>
             <span className="font-medium font-mono text-emerald-600">+$4.32</span>
             <span className="text-five9-muted">Minutes Saved:</span>
             <span className="font-medium font-mono text-emerald-600">+6 min</span>

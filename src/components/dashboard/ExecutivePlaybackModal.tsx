@@ -26,8 +26,8 @@ const TIMED_OVERLAYS: { afterLineIndex: number; label: string; icon: typeof Brai
 // Final overlays shown at completion
 const COMPLETION_OVERLAYS = [
   { label: "Confidence: 92%", icon: Brain, color: "text-primary" },
-  { label: "Call Deflected", icon: CheckCircle2, color: "text-emerald-600" },
-  { label: "+$4.32 Cost Avoided", icon: DollarSign, color: "text-emerald-600" },
+  { label: "Call Orchestrated", icon: CheckCircle2, color: "text-emerald-600" },
+  { label: "+$4.32 Cost Impact", icon: DollarSign, color: "text-emerald-600" },
   { label: "+6 Minutes Saved", icon: Clock, color: "text-emerald-600" },
 ];
 
