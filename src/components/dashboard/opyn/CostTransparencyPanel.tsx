@@ -74,8 +74,8 @@ export function CostTransparencyPanel() {
             onClick={startAppointment}
             className="w-full py-3 text-sm font-semibold rounded-xl border-2 border-border text-foreground hover:bg-secondary transition-colors flex items-center justify-center gap-2"
           >
-            <Phone className="h-4 w-4 text-[hsl(var(--opyn-purple))]" />
-            Call to schedule
+            <Calendar className="h-4 w-4 text-[hsl(var(--opyn-purple))]" />
+            Schedule Appointment
           </button>
         </div>
 
@@ -115,8 +115,8 @@ export function CostTransparencyPanel() {
             onClick={() => setDetailsOpen(true)}
             className="w-full py-3 text-sm font-semibold rounded-xl border-2 border-border text-foreground hover:bg-secondary transition-colors flex items-center justify-center gap-2"
           >
-            <Phone className="h-4 w-4 text-muted-foreground" />
-            Call to schedule
+            <FileText className="h-4 w-4 text-muted-foreground" />
+            Verify Details
           </button>
         </div>
       </div>
