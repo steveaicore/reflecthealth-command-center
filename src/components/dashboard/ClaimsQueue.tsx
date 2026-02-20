@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { FileText, Clock, CheckCircle, AlertCircle } from "lucide-react";
+import { ClaimDetailModal } from "./ClaimDetailModal";
 
 interface ClaimItem {
   id: string;
@@ -26,6 +27,7 @@ export function ClaimsQueue() {
   const [claims, setClaims] = useState<ClaimItem[]>(() =>
     Array.from({ length: 4 }, generateClaim)
   );
+  const [selectedClaim, setSelectedClaim] = useState<ClaimItem | null>(null);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -40,7 +42,6 @@ export function ClaimsQueue() {
           return claim;
         });
 
-        // Replace approved claims with new ones
         const hasAllApproved = updated.every(c => c.status === "approved");
         if (hasAllApproved) {
           return Array.from({ length: 4 }, generateClaim);
@@ -71,7 +72,11 @@ export function ClaimsQueue() {
         {claims.map(claim => {
           const config = statusConfig[claim.status];
           return (
-            <div key={claim.id} className="feed-item-enter flex items-center justify-between px-3 py-2 rounded border border-border bg-card">
+            <button
+              key={claim.id}
+              onClick={() => setSelectedClaim(claim)}
+              className="feed-item-enter flex items-center justify-between px-3 py-2 rounded border border-border bg-card hover:border-primary/30 transition-colors w-full text-left"
+            >
               <div className="flex items-center gap-3">
                 {config.icon}
                 <div className="flex flex-col">
@@ -94,10 +99,21 @@ export function ClaimsQueue() {
                   {config.label}
                 </span>
               </div>
-            </div>
+            </button>
           );
         })}
       </div>
+
+      <ClaimDetailModal
+        claim={selectedClaim ? {
+          claimId: selectedClaim.claimId,
+          aiConfidence: selectedClaim.aiConfidence,
+          originalDays: selectedClaim.originalDays,
+          currentDays: selectedClaim.currentDays,
+          status: selectedClaim.status,
+        } : null}
+        onClose={() => setSelectedClaim(null)}
+      />
     </div>
   );
 }

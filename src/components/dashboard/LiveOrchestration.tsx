@@ -1,7 +1,10 @@
+import { useState } from "react";
 import { useSimulation, type EventStatus } from "@/contexts/SimulationContext";
 import { CountUpValue } from "./CountUpValue";
 import { fmtCurrency, fmtDecimal } from "@/lib/format";
 import { Phone, Zap, Users, DollarSign, ArrowRight } from "lucide-react";
+import { InteractionDetailModal } from "./InteractionDetailModal";
+import type { SimEvent } from "@/contexts/SimulationContext";
 
 const STATUS_CONFIG: Record<EventStatus, { label: string; className: string }> = {
   "ai-routed": { label: "Routed to AI", className: "text-primary bg-primary/10" },
@@ -17,6 +20,7 @@ const PIPELINE_STAGES = [
 
 function EventFeed() {
   const { events } = useSimulation();
+  const [selectedEvent, setSelectedEvent] = useState<SimEvent | null>(null);
 
   return (
     <div className="flex flex-col gap-1 overflow-hidden max-h-[200px]">
@@ -26,7 +30,11 @@ function EventFeed() {
       {events.slice(0, 6).map((evt) => {
         const status = STATUS_CONFIG[evt.status];
         return (
-          <div key={evt.id} className="feed-item-enter flex items-center justify-between gap-2 px-2.5 py-1.5 rounded border border-border bg-card">
+          <button
+            key={evt.id}
+            onClick={() => setSelectedEvent(evt)}
+            className="feed-item-enter flex items-center justify-between gap-2 px-2.5 py-1.5 rounded border border-border bg-card hover:border-primary/30 transition-colors text-left w-full"
+          >
             <div className="flex items-center gap-2 min-w-0">
               <Phone className="h-3 w-3 text-primary shrink-0" />
               <span className="text-[10px] text-foreground truncate">
@@ -36,9 +44,10 @@ function EventFeed() {
             <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full shrink-0 ${status.className}`}>
               {status.label}
             </span>
-          </div>
+          </button>
         );
       })}
+      <InteractionDetailModal event={selectedEvent} onClose={() => setSelectedEvent(null)} />
     </div>
   );
 }

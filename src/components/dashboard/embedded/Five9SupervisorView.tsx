@@ -1,12 +1,15 @@
+import { useState } from "react";
 import { useSimulation } from "@/contexts/SimulationContext";
 import { useDashboard } from "@/contexts/DashboardContext";
 import { CountUpValue } from "../CountUpValue";
 import { fmtDecimal } from "@/lib/format";
 import { Phone, Zap, Clock, AlertTriangle, TrendingUp, Users } from "lucide-react";
+import { SupervisorMetricModal } from "../SupervisorMetricModal";
 
 export function Five9SupervisorView() {
   const { events, counters } = useSimulation();
   const { callParams } = useDashboard();
+  const [selectedMetric, setSelectedMetric] = useState<string | null>(null);
 
   const aiAssistRate = events.length > 0
     ? Math.round((events.filter(e => e.status === "ai-routed" || e.status === "resolved").length / events.length) * 100)
@@ -27,10 +30,14 @@ export function Five9SupervisorView() {
     <div className="p-4 space-y-4 five9-panel-bg h-full overflow-y-auto">
       <div className="text-xs font-semibold text-foreground">Supervisor Dashboard</div>
 
-      {/* KPI Grid */}
+      {/* KPI Grid - Clickable */}
       <div className="grid grid-cols-3 gap-3">
         {kpis.map((kpi) => (
-          <div key={kpi.label} className="five9-card p-3 space-y-1">
+          <button
+            key={kpi.label}
+            onClick={() => setSelectedMetric(kpi.label)}
+            className="five9-card p-3 space-y-1 text-left hover:border-five9-accent/30 transition-colors"
+          >
             <div className="flex items-center gap-1.5">
               <kpi.icon className={`h-3.5 w-3.5 ${kpi.color}`} />
               <span className="text-[10px] text-five9-muted">{kpi.label}</span>
@@ -43,7 +50,7 @@ export function Five9SupervisorView() {
               )}
               {kpi.suffix && <span className="text-xs text-five9-muted">{kpi.suffix}</span>}
             </div>
-          </div>
+          </button>
         ))}
       </div>
 
@@ -92,6 +99,8 @@ export function Five9SupervisorView() {
           ))}
         </div>
       )}
+
+      <SupervisorMetricModal metric={selectedMetric} onClose={() => setSelectedMetric(null)} />
     </div>
   );
 }

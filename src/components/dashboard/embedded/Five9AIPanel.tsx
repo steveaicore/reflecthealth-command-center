@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { useSimulation } from "@/contexts/SimulationContext";
 import { useDashboard } from "@/contexts/DashboardContext";
+import { DetailModal } from "../DetailModal";
 import penguinLogo from "@/assets/penguin-ai-logo.png";
 import { ArrowRight, Shield, FileText, Sparkles, AlertCircle } from "lucide-react";
 
@@ -14,6 +16,9 @@ export function Five9AIPanel() {
   const { pipeline, events } = useSimulation();
   const { callParams } = useDashboard();
   const activeEvent = events[0];
+  const [draftPopulated, setDraftPopulated] = useState(false);
+  const [confidenceModalOpen, setConfidenceModalOpen] = useState(false);
+  const [complianceModalOpen, setComplianceModalOpen] = useState(false);
 
   const suggestedResponse = activeEvent
     ? `Based on policy section 7.4, the ${activeEvent.reason.toLowerCase()} for ${activeEvent.payer} is confirmed. ${
@@ -64,8 +69,11 @@ export function Five9AIPanel() {
         </div>
       </div>
 
-      {/* Confidence */}
-      <div className="five9-card p-2.5 space-y-2">
+      {/* Confidence - Clickable */}
+      <button
+        onClick={() => setConfidenceModalOpen(true)}
+        className="five9-card p-2.5 space-y-2 w-full text-left hover:border-five9-accent/30 transition-colors"
+      >
         <div className="flex items-center justify-between">
           <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-five9-muted">Confidence</span>
           <span className={`text-sm font-bold font-mono ${
@@ -80,7 +88,7 @@ export function Five9AIPanel() {
             style={{ width: `${pipeline.confidence}%` }}
           />
         </div>
-      </div>
+      </button>
 
       {/* Suggested Response */}
       {activeEvent && (
@@ -89,14 +97,24 @@ export function Five9AIPanel() {
             Recommended Response
           </div>
           <p className="text-[11px] text-foreground leading-relaxed">{suggestedResponse}</p>
-          <button className="w-full py-1.5 rounded text-[10px] font-medium five9-accent-bg text-white transition-opacity hover:opacity-90">
-            Auto-populate Draft
+          <button
+            onClick={() => setDraftPopulated(true)}
+            className={`w-full py-1.5 rounded text-[10px] font-medium transition-opacity ${
+              draftPopulated
+                ? "bg-emerald-500 text-white"
+                : "five9-accent-bg text-white hover:opacity-90"
+            }`}
+          >
+            {draftPopulated ? "✓ Draft Populated" : "Auto-populate Draft"}
           </button>
         </div>
       )}
 
-      {/* Compliance */}
-      <div className="five9-card p-2.5 space-y-2">
+      {/* Compliance - Clickable */}
+      <button
+        onClick={() => setComplianceModalOpen(true)}
+        className="five9-card p-2.5 space-y-2 w-full text-left hover:border-five9-accent/30 transition-colors"
+      >
         <div className="text-[9px] font-semibold uppercase tracking-[0.12em] text-five9-muted">
           Real-time Compliance
         </div>
@@ -112,7 +130,7 @@ export function Five9AIPanel() {
             </div>
           ))}
         </div>
-      </div>
+      </button>
 
       {/* Escalation Detection */}
       {activeEvent && pipeline.outcome === "Escalated" && (
@@ -126,6 +144,62 @@ export function Five9AIPanel() {
           </p>
         </div>
       )}
+
+      {/* Confidence Analysis Modal */}
+      <DetailModal open={confidenceModalOpen} onClose={() => setConfidenceModalOpen(false)} title="AI Confidence Analysis">
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="p-3 rounded-lg bg-secondary/30 border border-border text-center">
+              <span className="text-[9px] text-muted-foreground uppercase block">Current</span>
+              <span className="text-xl font-bold font-mono text-primary">{pipeline.confidence}%</span>
+            </div>
+            <div className="p-3 rounded-lg bg-secondary/30 border border-border text-center">
+              <span className="text-[9px] text-muted-foreground uppercase block">Threshold</span>
+              <span className="text-xl font-bold font-mono text-foreground">{(callParams.accuracyPct * 100).toFixed(0)}%</span>
+            </div>
+          </div>
+          <div className="p-3 rounded-lg bg-secondary/30 border border-border space-y-1.5">
+            <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground">Signal Breakdown</span>
+            {[
+              { label: "Intent Match", value: 96 },
+              { label: "Policy Alignment", value: pipeline.confidence },
+              { label: "Historical Pattern", value: 88 },
+              { label: "Entity Extraction", value: 94 },
+            ].map(s => (
+              <div key={s.label} className="flex items-center justify-between text-[10px]">
+                <span className="text-muted-foreground">{s.label}</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-16 h-1 rounded-full bg-secondary overflow-hidden">
+                    <div className="h-full rounded-full five9-accent-bg" style={{ width: `${s.value}%` }} />
+                  </div>
+                  <span className="font-mono font-medium text-foreground">{s.value}%</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </DetailModal>
+
+      {/* Compliance Detail Modal */}
+      <DetailModal open={complianceModalOpen} onClose={() => setComplianceModalOpen(false)} title="Compliance Detail">
+        <div className="space-y-3">
+          {complianceFlags.map(flag => (
+            <div key={flag.label} className="p-3 rounded-lg bg-secondary/30 border border-border">
+              <div className="flex items-center gap-2 mb-1">
+                {flag.ok ? <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> : <AlertCircle className="h-3.5 w-3.5 text-amber-500" />}
+                <span className="text-[11px] font-semibold text-foreground">{flag.label}</span>
+                <span className={`text-[9px] font-medium ml-auto ${flag.ok ? "text-emerald-600" : "text-amber-600"}`}>{flag.ok ? "PASS" : "WARNING"}</span>
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                {flag.label === "HIPAA Compliant" && "All PHI/PII data encrypted in transit and at rest. Access logged per HIPAA §164.312."}
+                {flag.label === "PII Masked" && "Social Security numbers, DOBs, and member IDs masked in all AI processing pipelines."}
+                {flag.label === "Audit Logged" && "Complete interaction audit trail maintained with timestamp, agent ID, and AI decision rationale."}
+                {flag.label === "Escalation Policy" && (flag.ok ? "Confidence above threshold. Automated resolution permitted." : "Confidence below threshold. Escalation required per policy.")}
+              </p>
+            </div>
+          ))}
+        </div>
+      </DetailModal>
     </div>
   );
 }

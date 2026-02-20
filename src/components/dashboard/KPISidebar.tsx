@@ -1,11 +1,14 @@
+import { useState } from "react";
 import { useDashboard } from "@/contexts/DashboardContext";
 import { fmtCurrency, fmtDecimal } from "@/lib/format";
 import { CountUpValue } from "./CountUpValue";
+import { ExportSummary } from "./ExportSummary";
 import { Download, TrendingUp, Users, DollarSign, Clock, Zap } from "lucide-react";
 
 export function KPISidebar() {
   const { results, mode } = useDashboard();
   const { combined, callCenter, claims } = results;
+  const [exportOpen, setExportOpen] = useState(false);
 
   const kpis = [
     {
@@ -61,12 +64,14 @@ export function KPISidebar() {
         value: callCenter.annualManualCost,
         formatter: fmtCurrency,
         icon: <DollarSign className="h-3 w-3" />,
+        highlight: false,
       },
       {
         label: "Manual Cost (Claims)",
         value: claims.annualManualCost,
         formatter: fmtCurrency,
         icon: <DollarSign className="h-3 w-3" />,
+        highlight: false,
       }
     );
   }
@@ -96,10 +101,15 @@ export function KPISidebar() {
         </div>
       ))}
 
-      <button className="mt-auto flex items-center justify-center gap-1.5 py-2 rounded reflect-gradient text-white text-[10px] font-semibold hover:opacity-90 transition-opacity">
+      <button
+        onClick={() => setExportOpen(true)}
+        className="mt-auto flex items-center justify-center gap-1.5 py-2 rounded reflect-gradient text-white text-[10px] font-semibold hover:opacity-90 transition-opacity"
+      >
         <Download className="h-3 w-3" />
         {mode === "internal" ? "Export Internal" : "Export TPA"}
       </button>
+
+      <ExportSummary open={exportOpen} onClose={() => setExportOpen(false)} type={mode === "internal" ? "internal" : "tpa"} />
     </aside>
   );
 }
