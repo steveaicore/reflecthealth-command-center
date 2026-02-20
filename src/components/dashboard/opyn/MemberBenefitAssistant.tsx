@@ -224,57 +224,86 @@ export function MemberBenefitAssistant() {
 
 function StaticChat({ highlight, voiceStep }: { highlight: string | null; voiceStep: number }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
-      <div className="flex items-center gap-2 pb-2 border-b border-border">
-        <MessageCircle className="h-3.5 w-3.5 text-[hsl(var(--opyn-purple))]" />
-        <span className="text-xs font-medium">Help with my benefits</span>
-      </div>
-      <div className="space-y-3">
+    <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
+      <h3 className="text-base font-bold text-foreground text-center">Help with my benefits</h3>
+      
+      <div className="space-y-4">
+        {/* Member message — purple bubble */}
         <div className="flex justify-end">
-          <div className="bg-[hsl(var(--opyn-purple-light))] rounded-2xl rounded-br-sm px-3.5 py-2.5 max-w-[85%]">
-            <p className="text-[11px] text-foreground">Have I met my deductible? What will I pay for a knee replacement?</p>
+          <div className="bg-[hsl(var(--opyn-purple))] rounded-2xl rounded-br-sm px-4 py-3 max-w-[80%]">
+            <p className="text-xs text-white font-medium">Have I met my deductible? What will I pay for a knee replacement?</p>
           </div>
         </div>
-        <div className="flex gap-2">
-          <img src={penguinLogo} alt="AI" className="h-6 w-6 mt-1 object-contain" />
-          <div className="bg-[hsl(var(--opyn-green-light))] rounded-2xl rounded-bl-sm px-3.5 py-2.5 max-w-[85%] space-y-2">
-            <p className="text-[11px] text-foreground">Great question! Based on your Blue Cross PPO plan, here's your current status:</p>
-            <div className="space-y-2 pt-1">
-              <div className={`rounded-lg p-1.5 transition-all duration-500 ${highlight === "deductible" ? "ring-2 ring-[hsl(var(--opyn-purple))] bg-[hsl(var(--opyn-purple-light))]" : ""}`}>
-                <div className="flex justify-between text-[10px] mb-1">
-                  <span className="text-muted-foreground">Individual Deductible</span>
-                  <span className="font-semibold">$1,850 / $2,500</span>
+
+        {/* AI response */}
+        <div className="space-y-3">
+          <p className="text-xs font-bold text-[hsl(var(--opyn-purple))]">Virtual Assistant</p>
+          <p className="text-sm text-foreground">
+            Susan, your plan includes access to a surgical Center of Excellence. If you decide to receive your care at the preferred location, you will pay <span className="font-bold">$0 out of pocket.</span>
+          </p>
+
+          {/* Member info card */}
+          <div className={`rounded-2xl border border-border bg-card p-4 space-y-3 transition-all duration-500 ${highlight === "provider" ? "ring-2 ring-[hsl(var(--opyn-green))]" : ""}`}>
+            <div>
+              <p className="text-sm font-bold text-foreground">Maria Smithfield</p>
+              <p className="text-xs text-muted-foreground">Individual Accumulators</p>
+              <p className="text-[10px] text-muted-foreground italic">As of Jan 25, 2026</p>
+            </div>
+
+            {/* Accumulator bars */}
+            <div className="space-y-4">
+              <div className={`transition-all duration-500 ${highlight === "deductible" ? "ring-2 ring-[hsl(var(--opyn-purple))] rounded-lg p-1.5" : ""}`}>
+                <p className="text-xs font-semibold text-foreground mb-1">In-Network Deductible</p>
+                <div className="w-full h-3 bg-secondary rounded-full overflow-hidden">
+                  <div className="h-full rounded-full bg-[hsl(50_80%_65%)]" style={{ width: "48%" }} />
                 </div>
-                <Progress value={74} className="h-1.5 bg-[hsl(var(--opyn-green-light))]" />
+                <div className="flex justify-between text-[10px] mt-1 font-mono">
+                  <span className="text-foreground font-semibold">$1,200.52</span>
+                  <span className="text-muted-foreground">$2,500</span>
+                </div>
               </div>
-              <div className={`rounded-lg p-1.5 transition-all duration-500 ${highlight === "network" ? "ring-2 ring-[hsl(var(--opyn-purple))] bg-[hsl(var(--opyn-purple-light))]" : ""}`}>
-                <div className="flex justify-between text-[10px] mb-1">
-                  <span className="text-muted-foreground">Out-of-Pocket Max</span>
-                  <span className="font-semibold">$3,200 / $8,000</span>
+
+              <div className={`transition-all duration-500 ${highlight === "network" ? "ring-2 ring-[hsl(var(--opyn-purple))] rounded-lg p-1.5" : ""}`}>
+                <p className="text-xs font-semibold text-foreground mb-1">In-Network Out-of-Pocket Max</p>
+                <div className="w-full h-3 bg-secondary rounded-full overflow-hidden">
+                  <div className="h-full rounded-full bg-[hsl(var(--opyn-green))]" style={{ width: "4%" }} />
                 </div>
-                <Progress value={40} className="h-1.5 bg-[hsl(var(--opyn-green-light))]" />
+                <div className="flex justify-between text-[10px] mt-1 font-mono">
+                  <span className="text-foreground font-semibold">$500.00</span>
+                  <span className="text-muted-foreground">$12,000</span>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs font-semibold text-foreground mb-1">Out-of-Network Deductible</p>
+                <div className="w-full h-3 bg-secondary rounded-full overflow-hidden">
+                  <div className="h-full rounded-full bg-[hsl(var(--accent))]" style={{ width: "48%" }} />
+                </div>
+                <div className="flex justify-between text-[10px] mt-1 font-mono">
+                  <span className="text-foreground font-semibold">$1,200.52</span>
+                  <span className="text-muted-foreground">$2,500</span>
+                </div>
               </div>
             </div>
-            <div className={`pt-1 border-t border-border/50 rounded-lg p-1.5 transition-all duration-500 ${highlight === "provider" ? "ring-2 ring-[hsl(var(--opyn-green))] bg-[hsl(var(--opyn-green-light))]" : ""}`}>
-              <p className="text-[10px] text-muted-foreground">Plan: Blue Cross PPO Gold • Network: First Health • Eff: 01/01/2026</p>
-            </div>
-            {highlight === "compliance" && (
-              <div className="flex items-center gap-1.5 text-[9px] text-[hsl(var(--opyn-green))] font-medium animate-in fade-in duration-300">
-                <CheckCircle className="h-3 w-3" />
-                All eligibility pre-confirmed
-              </div>
-            )}
           </div>
+
+          {highlight === "compliance" && (
+            <div className="flex items-center gap-1.5 text-[10px] text-[hsl(var(--opyn-green))] font-medium animate-in fade-in duration-300">
+              <CheckCircle className="h-3.5 w-3.5" />
+              All eligibility pre-confirmed
+            </div>
+          )}
         </div>
       </div>
+
       {voiceStep >= 0 && (
-        <div className="flex items-center gap-2 pt-2 border-t border-border">
+        <div className="flex items-center gap-2 pt-3 border-t border-border">
           <div className="flex gap-0.5">
             {[0, 1, 2, 3, 4].map(i => (
-              <div key={i} className={`h-1 rounded-full transition-all duration-300 ${i <= voiceStep ? "w-6 bg-[hsl(var(--opyn-purple))]" : "w-3 bg-border"}`} />
+              <div key={i} className={`h-1.5 rounded-full transition-all duration-300 ${i <= voiceStep ? "w-7 bg-[hsl(var(--opyn-purple))]" : "w-3 bg-border"}`} />
             ))}
           </div>
-          <span className="text-[9px] text-muted-foreground ml-auto">Step {voiceStep + 1} of 5</span>
+          <span className="text-[10px] text-muted-foreground ml-auto">Step {voiceStep + 1} of 5</span>
         </div>
       )}
     </div>
