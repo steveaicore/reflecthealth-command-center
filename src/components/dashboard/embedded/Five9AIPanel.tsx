@@ -101,20 +101,43 @@ export function Five9AIPanel() {
             </span>
           </div>
           <p className="text-[11px] text-foreground leading-relaxed">{suggestedResponse}</p>
-          <button
-            onClick={() => {
-              setDraftPopulated(true);
-              // Auto-revert after 3 seconds so it can be clicked again for the next event
-              setTimeout(() => setDraftPopulated(false), 3000);
-            }}
-            className={`w-full py-1.5 rounded text-[10px] font-medium transition-all ${
-              draftPopulated
-                ? "bg-emerald-500 text-white"
-                : "five9-accent-bg text-white hover:opacity-90"
-            }`}
-          >
-            {draftPopulated ? "✓ Draft Populated" : "Auto-populate Draft"}
-          </button>
+          {!draftPopulated ? (
+            <button
+              onClick={() => setDraftPopulated(true)}
+              className="w-full py-1.5 rounded text-[10px] font-medium five9-accent-bg text-white hover:opacity-90 transition-all"
+            >
+              Auto-populate Draft
+            </button>
+          ) : (
+            <div className="space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div className="border border-border rounded-lg bg-card p-2.5 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-five9-muted">Draft Response</span>
+                  <span className="text-[8px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 font-medium">Auto-generated</span>
+                </div>
+                <div className="text-[10px] text-muted-foreground">
+                  To: {activeEvent.callerType === "Provider" ? "Provider Office" : "Member"} · Re: {activeEvent.reason}
+                </div>
+                <div className="border-t border-border pt-1.5 text-[11px] text-foreground leading-relaxed">
+                  {suggestedResponse}
+                  {activeEvent.status === "ai-routed" || activeEvent.status === "resolved"
+                    ? " This response was verified against current plan documentation. No additional review is required."
+                    : " This case has been flagged for agent review. Please verify details before sending."}
+                </div>
+              </div>
+              <div className="flex gap-1.5">
+                <button className="flex-1 py-1.5 rounded text-[10px] font-medium bg-emerald-500 text-white hover:bg-emerald-600 transition-colors">
+                  ✓ Send Draft
+                </button>
+                <button
+                  onClick={() => setDraftPopulated(false)}
+                  className="px-3 py-1.5 rounded text-[10px] font-medium bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
