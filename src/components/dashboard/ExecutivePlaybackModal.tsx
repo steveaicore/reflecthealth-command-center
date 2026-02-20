@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useAudioEngine } from "@/contexts/AudioEngineContext";
 import { useDashboard } from "@/contexts/DashboardContext";
 import { fmtCurrency, fmtDecimal } from "@/lib/format";
@@ -50,15 +51,19 @@ export function ExecutivePlaybackModal({ open, onClose }: Props) {
   const [activeOverlays, setActiveOverlays] = useState<string[]>([]);
   const abortRef = useRef(false);
 
-  // Reset on close
+  // Reset on close + body scroll lock
   useEffect(() => {
-    if (!open) {
+    if (open) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
       abortRef.current = true;
       setTranscript([]);
       setCompleted(false);
       setPlaying(false);
       setActiveOverlays([]);
     }
+    return () => { document.body.style.overflow = ""; };
   }, [open]);
 
   const runPlayback = useCallback(async () => {
@@ -113,11 +118,17 @@ export function ExecutivePlaybackModal({ open, onClose }: Props) {
 
   const allOverlayDefs = [...TIMED_OVERLAYS.map((o) => ({ label: o.label, icon: o.icon, color: o.color })), ...COMPLETION_OVERLAYS];
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={handleClose}>
-      <div className="bg-card border border-border rounded-xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/45 backdrop-blur-sm max-sm:items-start max-sm:pt-10 animate-in fade-in duration-200"
+      onClick={handleClose}
+    >
+      <div
+        className="bg-card border border-border rounded-2xl shadow-2xl w-[90%] max-w-[900px] max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-[0.96] duration-200"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
-        <div className="px-5 py-3 border-b border-border flex items-center justify-between">
+        <div className="px-5 py-3 border-b border-border flex items-center justify-between shrink-0">
           <div>
             <h3 className="text-sm font-semibold text-foreground">Executive Playback — Benefits Verification Call</h3>
             <p className="text-[10px] text-muted-foreground mt-0.5">Incoming · Provider · Benefits Verification · UHC</p>
@@ -128,7 +139,7 @@ export function ExecutivePlaybackModal({ open, onClose }: Props) {
         </div>
 
         {/* Content */}
-        <div className="p-5 space-y-4 max-h-[60vh] overflow-y-auto">
+        <div className="p-5 space-y-4 overflow-y-auto flex-1">
           {/* Play button */}
           {!playing && !completed && (
             <button
@@ -216,6 +227,7 @@ export function ExecutivePlaybackModal({ open, onClose }: Props) {
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
