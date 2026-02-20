@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useSimulation } from "@/contexts/SimulationContext";
 import { useAudioEngine } from "@/contexts/AudioEngineContext";
 import { useDashboard } from "@/contexts/DashboardContext";
-import { Bot, User, AlertTriangle, CheckCircle2, Mic, MicOff, Timer } from "lucide-react";
+import { User, AlertTriangle, CheckCircle2, Mic, MicOff, Timer } from "lucide-react";
 import { AudioControlPanel } from "./AudioControlPanel";
+import penguinLogo from "@/assets/penguin-logo.png";
 
 const CALLER_VOICE = "EXAVITQu4vr4xnSDxMaL";
 const AI_VOICE = "onwK4e9ZLuTAKqWW03F9";
@@ -266,7 +267,7 @@ export function LiveCallSimulation() {
               line.speaker === "ai" ? "bg-five9-accent/10" : "bg-secondary"
             }`}>
               {line.speaker === "ai" ? (
-                <Bot className="h-3 w-3 text-five9-accent" />
+                <img src={penguinLogo} alt="Penguin AI" className="h-4 w-4 object-contain" />
               ) : (
                 <User className="h-3 w-3 text-five9-muted" />
               )}

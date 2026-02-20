@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { Bot, User, Send, Sparkles } from "lucide-react";
+import { User, Send, Sparkles } from "lucide-react";
+import penguinLogo from "@/assets/penguin-logo.png";
 
 interface ChatMessage {
   id: string;
@@ -82,7 +83,7 @@ export function Five9ChatView() {
               <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${
                 msg.speaker === "member" ? "bg-secondary" : "bg-five9-accent/10"
               }`}>
-                {msg.speaker === "member" ? <User className="h-3 w-3 text-five9-muted" /> : <Bot className="h-3 w-3 text-five9-accent" />}
+                {msg.speaker === "member" ? <User className="h-3 w-3 text-five9-muted" /> : <img src={penguinLogo} alt="Penguin AI" className="h-4 w-4 object-contain" />}
               </div>
               <div className={`five9-card p-2 max-w-[75%] feed-item-enter ${msg.speaker !== "member" ? "five9-active-border" : ""}`}>
                 <p className="text-[11px] text-foreground leading-relaxed">{msg.text}</p>

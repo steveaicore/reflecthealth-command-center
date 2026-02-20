@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useSimulation } from "@/contexts/SimulationContext";
 import { useDashboard } from "@/contexts/DashboardContext";
 import { DetailModal } from "../DetailModal";
-import penguinLogo from "@/assets/penguin-ai-logo.png";
+import penguinAiLogo from "@/assets/penguin-ai-logo.png";
+import penguinLogo from "@/assets/penguin-logo.png";
 import { ArrowRight, Shield, FileText, Sparkles, AlertCircle } from "lucide-react";
 
 const PIPELINE_STAGES = [
@@ -39,7 +40,7 @@ export function Five9AIPanel() {
     <div className="p-3 space-y-3 five9-panel-bg h-full">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
-          <img src={penguinLogo} alt="Penguin AI" className="h-3.5" />
+          <img src={penguinAiLogo} alt="Penguin AI" className="h-3.5" />
           <span className="text-[10px] font-semibold text-foreground">Penguin AI Orchestration</span>
         </div>
         <span className="text-[8px] text-five9-muted">Powered by Penguin AI</span>
@@ -93,13 +94,20 @@ export function Five9AIPanel() {
       {/* Suggested Response */}
       {activeEvent && (
         <div className="five9-card p-2.5 space-y-2 five9-active-border">
-          <div className="text-[9px] font-semibold uppercase tracking-[0.12em] text-five9-muted">
-            Recommended Response
+          <div className="flex items-center gap-1.5">
+            <img src={penguinLogo} alt="Penguin AI" className="h-4 w-4 object-contain" />
+            <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-five9-muted">
+              Recommended Response
+            </span>
           </div>
           <p className="text-[11px] text-foreground leading-relaxed">{suggestedResponse}</p>
           <button
-            onClick={() => setDraftPopulated(true)}
-            className={`w-full py-1.5 rounded text-[10px] font-medium transition-opacity ${
+            onClick={() => {
+              setDraftPopulated(true);
+              // Auto-revert after 3 seconds so it can be clicked again for the next event
+              setTimeout(() => setDraftPopulated(false), 3000);
+            }}
+            className={`w-full py-1.5 rounded text-[10px] font-medium transition-all ${
               draftPopulated
                 ? "bg-emerald-500 text-white"
                 : "five9-accent-bg text-white hover:opacity-90"
