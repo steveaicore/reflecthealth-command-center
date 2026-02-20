@@ -14,7 +14,226 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      automation_scenarios: {
+        Row: {
+          analysis_id: string | null
+          automation_coverage_after: number | null
+          automation_coverage_before: number | null
+          call_intent: string
+          compliance_requirements: Json | null
+          confidence_score: number | null
+          created_at: string
+          decision_tree: Json | null
+          escalation_rules: Json | null
+          expected_resolution: string | null
+          id: string
+          name: string
+          recording_id: string | null
+          required_data_inputs: Json | null
+          required_system_integrations: Json | null
+          status: string
+        }
+        Insert: {
+          analysis_id?: string | null
+          automation_coverage_after?: number | null
+          automation_coverage_before?: number | null
+          call_intent: string
+          compliance_requirements?: Json | null
+          confidence_score?: number | null
+          created_at?: string
+          decision_tree?: Json | null
+          escalation_rules?: Json | null
+          expected_resolution?: string | null
+          id?: string
+          name: string
+          recording_id?: string | null
+          required_data_inputs?: Json | null
+          required_system_integrations?: Json | null
+          status?: string
+        }
+        Update: {
+          analysis_id?: string | null
+          automation_coverage_after?: number | null
+          automation_coverage_before?: number | null
+          call_intent?: string
+          compliance_requirements?: Json | null
+          confidence_score?: number | null
+          created_at?: string
+          decision_tree?: Json | null
+          escalation_rules?: Json | null
+          expected_resolution?: string | null
+          id?: string
+          name?: string
+          recording_id?: string | null
+          required_data_inputs?: Json | null
+          required_system_integrations?: Json | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_scenarios_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "call_analyses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_scenarios_recording_id_fkey"
+            columns: ["recording_id"]
+            isOneToOne: false
+            referencedRelation: "call_recordings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      call_analyses: {
+        Row: {
+          automation_feasibility_score: number | null
+          avg_handle_time_seconds: number | null
+          backend_systems_accessed: Json | null
+          call_type: string | null
+          compliance_flags: Json | null
+          cost_per_call_ai: number | null
+          cost_per_call_manual: number | null
+          created_at: string
+          entities: Json | null
+          escalation_risk: string | null
+          id: string
+          intent: string | null
+          recording_id: string
+          resolution_type: string | null
+          sentiment: string | null
+          speakers: Json | null
+          summary: string | null
+          transcript: string | null
+        }
+        Insert: {
+          automation_feasibility_score?: number | null
+          avg_handle_time_seconds?: number | null
+          backend_systems_accessed?: Json | null
+          call_type?: string | null
+          compliance_flags?: Json | null
+          cost_per_call_ai?: number | null
+          cost_per_call_manual?: number | null
+          created_at?: string
+          entities?: Json | null
+          escalation_risk?: string | null
+          id?: string
+          intent?: string | null
+          recording_id: string
+          resolution_type?: string | null
+          sentiment?: string | null
+          speakers?: Json | null
+          summary?: string | null
+          transcript?: string | null
+        }
+        Update: {
+          automation_feasibility_score?: number | null
+          avg_handle_time_seconds?: number | null
+          backend_systems_accessed?: Json | null
+          call_type?: string | null
+          compliance_flags?: Json | null
+          cost_per_call_ai?: number | null
+          cost_per_call_manual?: number | null
+          created_at?: string
+          entities?: Json | null
+          escalation_risk?: string | null
+          id?: string
+          intent?: string | null
+          recording_id?: string
+          resolution_type?: string | null
+          sentiment?: string | null
+          speakers?: Json | null
+          summary?: string | null
+          transcript?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_analyses_recording_id_fkey"
+            columns: ["recording_id"]
+            isOneToOne: false
+            referencedRelation: "call_recordings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      call_recordings: {
+        Row: {
+          created_at: string
+          duration_seconds: number | null
+          file_name: string
+          file_size_bytes: number | null
+          id: string
+          status: string
+          storage_path: string | null
+        }
+        Insert: {
+          created_at?: string
+          duration_seconds?: number | null
+          file_name: string
+          file_size_bytes?: number | null
+          id?: string
+          status?: string
+          storage_path?: string | null
+        }
+        Update: {
+          created_at?: string
+          duration_seconds?: number | null
+          file_name?: string
+          file_size_bytes?: number | null
+          id?: string
+          status?: string
+          storage_path?: string | null
+        }
+        Relationships: []
+      }
+      knowledge_base_entries: {
+        Row: {
+          call_count: number | null
+          confidence_score: number | null
+          created_at: string
+          entity_patterns: Json | null
+          id: string
+          intent: string
+          response_template: string | null
+          scenario_id: string | null
+          success_rate: number | null
+          updated_at: string
+        }
+        Insert: {
+          call_count?: number | null
+          confidence_score?: number | null
+          created_at?: string
+          entity_patterns?: Json | null
+          id?: string
+          intent: string
+          response_template?: string | null
+          scenario_id?: string | null
+          success_rate?: number | null
+          updated_at?: string
+        }
+        Update: {
+          call_count?: number | null
+          confidence_score?: number | null
+          created_at?: string
+          entity_patterns?: Json | null
+          id?: string
+          intent?: string
+          response_template?: string | null
+          scenario_id?: string | null
+          success_rate?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_base_entries_scenario_id_fkey"
+            columns: ["scenario_id"]
+            isOneToOne: false
+            referencedRelation: "automation_scenarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
