@@ -3,11 +3,12 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   Upload, FileAudio, Loader2, CheckCircle2, AlertCircle, Brain, Shield,
   TrendingUp, ChevronDown, ChevronUp, BarChart3, BookOpen, Cpu, Play, Pause, Square,
-  RotateCcw, Database, Users, DollarSign, Layers,
+  RotateCcw, Database, Users, DollarSign, Layers, Mic,
 } from "lucide-react";
 import penguinLogo from "@/assets/penguin-ai-logo.png";
 import { AutomationScoringPanel, type ScoringBreakdown } from "@/components/dashboard/AutomationScoringPanel";
 import { BatchAnalysisMode } from "@/components/dashboard/BatchAnalysisMode";
+import { LiveSimulationMode } from "@/components/dashboard/LiveSimulationMode";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type AnalysisState = "idle" | "uploading" | "transcribing" | "analyzing" | "complete" | "error";
@@ -654,6 +655,7 @@ export function Module5() {
   const [scoringOpen, setScoringOpen] = useState(true);
   const [coverageDisplay, setCoverageDisplay] = useState({ before: 64, after: 71 });
   const [showBatch, setShowBatch] = useState(false);
+  const [showLiveSim, setShowLiveSim] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const STEPS: { label: string; state: AnalysisState }[] = [
@@ -925,12 +927,36 @@ export function Module5() {
                   <div key={item} className="text-[10px] text-emerald-600 flex items-center gap-1.5"><CheckCircle2 className="h-2.5 w-2.5" />{item}</div>
                 ))}
               </div>
-              <button onClick={() => setShowReplay(true)}
-                className="w-full py-2 rounded-md bg-emerald-600 text-white text-xs font-semibold flex items-center justify-center gap-2 hover:bg-emerald-700 transition-colors">
-                <Play className="h-3 w-3 fill-current" />
-                {audioFile ? "Demo: Real Caller Voice + Penguin AI Response" : "Demo: Play Automated Scenario"}
-              </button>
+              <div className="flex flex-col gap-2">
+                <button onClick={() => setShowLiveSim(true)}
+                  className="w-full py-2.5 rounded-lg bg-gradient-to-r from-primary to-primary/80 text-primary-foreground text-xs font-semibold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity shadow-sm">
+                  <Mic className="h-3.5 w-3.5" />
+                  🎙 Test in Live Voice Simulation
+                </button>
+                <button onClick={() => setShowReplay(true)}
+                  className="w-full py-2 rounded-md bg-emerald-600 text-white text-xs font-semibold flex items-center justify-center gap-2 hover:bg-emerald-700 transition-colors">
+                  <Play className="h-3 w-3 fill-current" />
+                  {audioFile ? "Demo: Real Caller Voice + Penguin AI Response" : "Demo: Play Automated Scenario"}
+                </button>
+              </div>
             </div>
+          )}
+
+          {/* Live Voice Simulation */}
+          {showLiveSim && analysis && (
+            <LiveSimulationMode
+              scenario={{
+                intent: analysis.intent,
+                callType: analysis.call_type,
+                requiredDataInputs: analysis.required_data_inputs,
+                escalationRules: analysis.escalation_rules,
+                complianceRequirements: analysis.compliance_requirements,
+                backendSystems: analysis.backend_systems_accessed,
+                confidenceScore: analysis.automation_feasibility_score,
+                aiResponseScript: analysis.ai_response_script,
+              }}
+              onClose={() => setShowLiveSim(false)}
+            />
           )}
 
           {showReplay && <VoiceReplayPanel analysis={analysis} audioFile={audioFile} />}
