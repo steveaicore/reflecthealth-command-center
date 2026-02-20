@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { Circle, ChevronDown, Monitor } from "lucide-react";
+import { Circle, ChevronDown, Monitor, Download } from "lucide-react";
 import { useDashboard } from "@/contexts/DashboardContext";
+import { ExportSummary } from "../ExportSummary";
 import penguinLogo from "@/assets/penguin-ai-logo.png";
 import type { Five9Tab } from "./Five9Layout";
 
@@ -12,6 +13,7 @@ interface Five9HeaderProps {
 export function Five9Header({ activeTab, setActiveTab }: Five9HeaderProps) {
   const { setDeploymentMode } = useDashboard();
   const [elapsed, setElapsed] = useState(0);
+  const [exportOpen, setExportOpen] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => setElapsed((p) => p + 1), 1000);
@@ -55,6 +57,13 @@ export function Five9Header({ activeTab, setActiveTab }: Five9HeaderProps) {
 
       <div className="flex items-center gap-4">
         <button
+          onClick={() => setExportOpen(true)}
+          className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded bg-white/10 text-white/70 hover:bg-white/20 hover:text-white transition-colors"
+        >
+          <Download className="h-2.5 w-2.5" />
+          Export
+        </button>
+        <button
           onClick={() => setDeploymentMode("white-label")}
           className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded bg-white/10 text-white/70 hover:bg-white/20 hover:text-white transition-colors"
         >
@@ -75,6 +84,8 @@ export function Five9Header({ activeTab, setActiveTab }: Five9HeaderProps) {
         </div>
         <img src={penguinLogo} alt="Penguin AI" className="h-3.5 opacity-50" />
       </div>
+
+      <ExportSummary open={exportOpen} onClose={() => setExportOpen(false)} type="five9" />
     </header>
   );
 }

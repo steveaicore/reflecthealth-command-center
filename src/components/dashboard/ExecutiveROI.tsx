@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useDashboard } from "@/contexts/DashboardContext";
 import { fmtCurrency, fmtDecimal } from "@/lib/format";
 import { MetricCard } from "./MetricCard";
@@ -6,10 +7,12 @@ import { ExecutiveWalkthroughButton } from "./ExecutiveWalkthrough";
 import { Slider } from "@/components/ui/slider";
 import { DollarSign, TrendingUp, Clock, Users } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { FinancialBreakdownModal } from "./FinancialBreakdownModal";
 
 export function ExecutiveROI() {
   const { results, mode, platformParams, setPlatformParams } = useDashboard();
   const { combined, callCenter, claims } = results;
+  const [breakdownMetric, setBreakdownMetric] = useState<string | null>(null);
 
   const monthlySavings = combined.totalAnnualSavings / 12;
   const monthlyData = Array.from({ length: 12 }, (_, i) => ({
@@ -30,9 +33,9 @@ export function ExecutiveROI() {
         </div>
       </div>
 
-      {/* Hero metrics */}
+      {/* Hero metrics — clickable */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div id="total-savings" className="metric-card flex flex-col gap-1.5 reflect-border">
+        <button id="total-savings" className="metric-card flex flex-col gap-1.5 reflect-border text-left hover:border-primary/40 transition-colors" onClick={() => setBreakdownMetric("savings")}>
           <div className="flex items-center justify-between">
             <span className="metric-label">Total Annual Savings</span>
             <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
@@ -42,8 +45,8 @@ export function ExecutiveROI() {
             formatter={fmtCurrency}
             className="metric-value metric-positive"
           />
-        </div>
-        <div id="roi-multiple" className="metric-card flex flex-col gap-1.5 reflect-border">
+        </button>
+        <button id="roi-multiple" className="metric-card flex flex-col gap-1.5 reflect-border text-left hover:border-primary/40 transition-colors" onClick={() => setBreakdownMetric("roi")}>
           <div className="flex items-center justify-between">
             <span className="metric-label">ROI Multiple</span>
             <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
@@ -53,16 +56,16 @@ export function ExecutiveROI() {
             formatter={(n) => `${fmtDecimal(n)}x`}
             className="metric-value metric-positive"
           />
-        </div>
-        <div id="payback-period">
+        </button>
+        <button id="payback-period" className="text-left hover:border-primary/40 transition-colors rounded-lg" onClick={() => setBreakdownMetric("payback")}>
           <MetricCard
             label="Payback Period"
             value={`${fmtDecimal(combined.paybackMonths)} mo`}
             trend="positive"
             icon={<Clock className="h-3.5 w-3.5" />}
           />
-        </div>
-        <div id="fte-reduction">
+        </button>
+        <button id="fte-reduction" className="text-left hover:border-primary/40 transition-colors rounded-lg" onClick={() => setBreakdownMetric("fte")}>
           <MetricCard
             label="Total FTE Reduction"
             value={fmtDecimal(callCenter.fteSaved + claims.fteSaved)}
@@ -70,7 +73,7 @@ export function ExecutiveROI() {
             trend="positive"
             icon={<Users className="h-3.5 w-3.5" />}
           />
-        </div>
+        </button>
       </div>
 
       {/* 12-month chart */}
@@ -136,6 +139,8 @@ export function ExecutiveROI() {
           />
         </div>
       )}
+
+      <FinancialBreakdownModal metric={breakdownMetric} onClose={() => setBreakdownMetric(null)} />
     </div>
   );
 }

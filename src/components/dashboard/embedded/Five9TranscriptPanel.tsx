@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { useSimulation } from "@/contexts/SimulationContext";
 import { useDashboard } from "@/contexts/DashboardContext";
+import { DetailModal } from "../DetailModal";
 import { Bot, User, AlertTriangle, CheckCircle2 } from "lucide-react";
 
 const TRANSCRIPT_LINES = [
@@ -18,6 +20,7 @@ export function Five9TranscriptPanel() {
   const activeEvent = events[0];
   const isDeflected = activeEvent && (activeEvent.status === "ai-routed" || activeEvent.status === "resolved");
   const confidenceThreshold = callParams.accuracyPct * 100;
+  const [analysisModalOpen, setAnalysisModalOpen] = useState(false);
 
   return (
     <div className="p-3 space-y-3 five9-panel-bg h-full">
@@ -26,9 +29,12 @@ export function Five9TranscriptPanel() {
           AI Transcript + Orchestration
         </div>
         {activeEvent && (
-          <span className="text-[9px] font-mono text-five9-accent">
+          <button
+            onClick={() => setAnalysisModalOpen(true)}
+            className="text-[9px] font-mono text-five9-accent hover:underline"
+          >
             Confidence: {pipeline.confidence}%
-          </span>
+          </button>
         )}
       </div>
 
@@ -75,9 +81,12 @@ export function Five9TranscriptPanel() {
         ))}
       </div>
 
-      {/* AI highlights */}
+      {/* AI highlights - Clickable */}
       {activeEvent && (
-        <div className="five9-card p-2.5 space-y-1.5">
+        <button
+          onClick={() => setAnalysisModalOpen(true)}
+          className="five9-card p-2.5 space-y-1.5 w-full text-left hover:border-five9-accent/30 transition-colors"
+        >
           <div className="text-[9px] font-semibold uppercase tracking-[0.12em] text-five9-muted">
             AI Analysis
           </div>
@@ -93,8 +102,43 @@ export function Five9TranscriptPanel() {
             <div className="text-five9-muted">Recommendation:</div>
             <div className="font-medium text-foreground">{pipeline.outcome === "Deflected" ? "Auto-resolve" : "Escalate"}</div>
           </div>
-        </div>
+        </button>
       )}
+
+      {/* AI Analysis Modal */}
+      <DetailModal open={analysisModalOpen} onClose={() => setAnalysisModalOpen(false)} title="AI Analysis Detail">
+        {activeEvent && (
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 rounded-lg bg-secondary/30 border border-border">
+                <span className="text-[9px] text-muted-foreground uppercase block">Intent</span>
+                <span className="text-sm font-semibold text-foreground">{activeEvent.reason}</span>
+              </div>
+              <div className="p-3 rounded-lg bg-secondary/30 border border-border">
+                <span className="text-[9px] text-muted-foreground uppercase block">Caller</span>
+                <span className="text-sm font-semibold text-foreground">{activeEvent.callerType} — {activeEvent.payer}</span>
+              </div>
+              <div className="p-3 rounded-lg bg-secondary/30 border border-border">
+                <span className="text-[9px] text-muted-foreground uppercase block">Confidence</span>
+                <span className={`text-lg font-bold font-mono ${pipeline.confidence > confidenceThreshold ? "text-emerald-600" : "text-amber-600"}`}>
+                  {pipeline.confidence}%
+                </span>
+              </div>
+              <div className="p-3 rounded-lg bg-secondary/30 border border-border">
+                <span className="text-[9px] text-muted-foreground uppercase block">Resolution</span>
+                <span className="text-lg font-bold font-mono text-foreground">{pipeline.resolutionTime}s</span>
+              </div>
+            </div>
+            <div className="p-3 rounded-lg bg-secondary/30 border border-border">
+              <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground">Policy Reference</span>
+              <p className="text-[11px] text-foreground mt-1 leading-relaxed">
+                Section 7.4 — {activeEvent.reason} procedures for {activeEvent.payer} plans. Coverage verified against
+                current contract terms. {pipeline.outcome === "Deflected" ? "Automated resolution permitted." : "Manual review required per escalation policy."}
+              </p>
+            </div>
+          </div>
+        )}
+      </DetailModal>
     </div>
   );
 }
