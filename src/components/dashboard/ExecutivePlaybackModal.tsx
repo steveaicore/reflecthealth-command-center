@@ -3,7 +3,8 @@ import { createPortal } from "react-dom";
 import { useAudioEngine } from "@/contexts/AudioEngineContext";
 import { useDashboard } from "@/contexts/DashboardContext";
 import { fmtCurrency, fmtDecimal } from "@/lib/format";
-import { Play, X, Bot, User, CheckCircle2, ShieldCheck, DollarSign, TrendingUp, Clock, Brain } from "lucide-react";
+import { Play, X, User, CheckCircle2, ShieldCheck, DollarSign, TrendingUp, Clock, Brain } from "lucide-react";
+import penguinLogo from "@/assets/penguin-logo.png";
 
 const CALLER_VOICE = "EXAVITQu4vr4xnSDxMaL";
 const AI_VOICE = "onwK4e9ZLuTAKqWW03F9";
@@ -160,7 +161,7 @@ export function ExecutivePlaybackModal({ open, onClose }: Props) {
                   <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
                     line.speaker === "ai" ? "bg-primary/10" : "bg-secondary"
                   }`}>
-                    {line.speaker === "ai" ? <Bot className="h-3.5 w-3.5 text-primary" /> : <User className="h-3.5 w-3.5 text-muted-foreground" />}
+                    {line.speaker === "ai" ? <img src={penguinLogo} alt="Penguin AI" className="h-4 w-4 object-contain" /> : <User className="h-3.5 w-3.5 text-muted-foreground" />}
                   </div>
                   <div className={`rounded-lg p-2.5 max-w-[80%] border ${
                     line.speaker === "ai" ? "border-primary/20 bg-primary/5" : "border-border bg-secondary/50"
