@@ -148,31 +148,63 @@ function VoiceReplayPanel({ analysis, audioFile }: { analysis: CallAnalysis; aud
 
     if (words.length > 0) {
       // Group consecutive words by speaker into segments
-      const segs: SpeakerTurn[] = [];
+      const segs: { speaker: string; text: string; startTime: number; endTime: number }[] = [];
       let cur = words[0].speaker, s0 = words[0].start, s1 = words[0].end, txt = words[0].text;
       for (let i = 1; i < words.length; i++) {
         const w = words[i];
         if (w.speaker === cur) { s1 = w.end; txt += w.text; }
         else {
-          if (txt.trim()) segs.push({ role: cur === "speaker_00" ? "caller" : "ai", text: txt.trim(), startTime: s0, endTime: s1 });
+          if (txt.trim()) segs.push({ speaker: cur, text: txt.trim(), startTime: s0, endTime: s1 });
           cur = w.speaker; s0 = w.start; s1 = w.end; txt = w.text;
         }
       }
-      if (txt.trim()) segs.push({ role: cur === "speaker_00" ? "caller" : "ai", text: txt.trim(), startTime: s0, endTime: s1 });
+      if (txt.trim()) segs.push({ speaker: cur, text: txt.trim(), startTime: s0, endTime: s1 });
 
-      // Replace agent turns with Penguin AI scripted sentences
+      // Identify which speaker label is the AGENT (rep) vs CALLER (customer).
+      // Heuristic: the agent typically uses formal language like "how can I help",
+      // "thank you for calling", "your account", "policy number", etc.
+      // We tally agent-like phrase hits per speaker to determine who is who.
+      const agentPhrases = /how can i (help|assist)|thank you for calling|this is .{2,20} (from|with|at)|your (account|policy|claim|coverage|member|benefit)|let me (pull|look|check|verify)|i('ve| have) (located|found|confirmed|verified)|have a great|is there anything else/i;
+      const speakerScores: Record<string, number> = {};
+      for (const seg of segs) {
+        if (!speakerScores[seg.speaker]) speakerScores[seg.speaker] = 0;
+        if (agentPhrases.test(seg.text)) speakerScores[seg.speaker]++;
+      }
+
+      // The speaker with the highest agent-phrase score is the agent/rep.
+      // If tied or no matches, fall back to speaker_01 (second speaker) as agent,
+      // since call center recordings typically start with the rep answering.
+      const allSpeakers = [...new Set(segs.map(s => s.speaker))];
+      let agentSpeaker = allSpeakers[0]; // default
+      let topScore = -1;
+      for (const sp of allSpeakers) {
+        if ((speakerScores[sp] ?? 0) > topScore) {
+          topScore = speakerScores[sp] ?? 0;
+          agentSpeaker = sp;
+        }
+      }
+      // If no clear winner from phrases, treat speaker_01 as agent (rep answered first → speaker_00 = rep in many recordings)
+      // but only if there are exactly 2 speakers and no phrase hits
+      if (topScore === 0 && allSpeakers.length >= 2) {
+        // Pick the speaker who is NOT speaker_00 as agent — caller is usually speaker_00 in ElevenLabs diarization
+        agentSpeaker = allSpeakers.find(s => s !== "speaker_00") ?? allSpeakers[1];
+      }
+
+      // Map segments: agent → "ai" (will get Penguin TTS), other → "caller" (real audio)
       let aiIdx = 0;
       return segs.map(seg => {
-        if (seg.role === "caller") return seg;
-        const text = aiSentences[aiIdx] ?? seg.text;
-        aiIdx = Math.min(aiIdx + 1, aiSentences.length - 1);
-        return { ...seg, role: "ai" as const, text };
+        if (seg.speaker === agentSpeaker) {
+          const text = aiSentences[aiIdx] ?? seg.text;
+          aiIdx = Math.min(aiIdx + 1, aiSentences.length - 1);
+          return { role: "ai" as const, text, startTime: seg.startTime, endTime: seg.endTime };
+        }
+        return { role: "caller" as const, text: seg.text, startTime: seg.startTime, endTime: seg.endTime };
       });
     }
 
     // Fallback: parse transcript lines
     const lines = analysis.transcript.split('\n').filter(Boolean);
-    const callerLines = lines.filter(l => /^(caller|member|provider):/i.test(l)).map(l => l.replace(/^[^:]+:\s*/i, '').trim());
+    const callerLines = lines.filter(l => /^(caller|member|provider|patient|customer):/i.test(l)).map(l => l.replace(/^[^:]+:\s*/i, '').trim());
     const result: SpeakerTurn[] = [];
     const maxT = Math.max(callerLines.length, aiSentences.length);
     for (let i = 0; i < maxT; i++) {
