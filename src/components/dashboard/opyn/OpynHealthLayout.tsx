@@ -1,8 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useDashboard } from "@/contexts/DashboardContext";
-import { Monitor, User, Building2, Activity, CheckCircle, Phone, TrendingUp } from "lucide-react";
+import { Monitor, User, Building2, Activity, CheckCircle, Phone, X } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
-import { CountUpValue } from "@/components/dashboard/CountUpValue";
 import penguinLogo from "@/assets/penguin-logo-pink.png";
 import { MemberBenefitAssistant } from "./MemberBenefitAssistant";
 import { CostTransparencyPanel } from "./CostTransparencyPanel";
@@ -10,8 +9,34 @@ import { ProviderPortalView } from "./ProviderPortalView";
 
 type OpynMode = "member" | "provider";
 
-/* ─── PART 4: Dynamic Orchestration Sidebar ─── */
-function OrchestrationSidebar() {
+/* ─── Mini animated sparkline ─── */
+function MiniSparkline({ value }: { value: number }) {
+  const [points, setPoints] = useState<number[]>(() => Array.from({ length: 8 }, () => 30 + Math.random() * 20));
+
+  useEffect(() => {
+    setPoints(prev => [...prev.slice(1), 20 + (value % 40) + Math.random() * 15]);
+  }, [value]);
+
+  const max = Math.max(...points, 1);
+  const h = 20;
+  const w = 100;
+  const step = w / (points.length - 1);
+  const pathD = points.map((p, i) => `${i === 0 ? "M" : "L"} ${i * step} ${h - (p / max) * h}`).join(" ");
+
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-5 mt-1" preserveAspectRatio="none">
+      <path d={pathD} fill="none" stroke="hsl(var(--opyn-green))" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="transition-all duration-500" />
+    </svg>
+  );
+}
+
+/* ─── Orchestration Pop-out Panel ─── */
+interface OrchestrationPanelProps {
+  open: boolean;
+  onClose: () => void;
+}
+
+function OrchestrationPanel({ open, onClose }: OrchestrationPanelProps) {
   const [liveMode, setLiveMode] = useState(true);
   const [metrics, setMetrics] = useState({
     memberResolved: 72,
@@ -46,83 +71,82 @@ function OrchestrationSidebar() {
     { label: "Annualized Cost Impact", value: `$${metrics.annualizedCost.toFixed(2)}M`, sub: "savings", raw: metrics.annualizedCost },
   ];
 
-  return (
-    <div className="w-64 border-l border-border bg-card p-4 space-y-4 overflow-y-auto">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Activity className="h-3.5 w-3.5 text-[hsl(var(--opyn-purple))]" />
-          <h3 className="text-[11px] font-semibold">AI Orchestration Activity</h3>
-        </div>
-      </div>
-
-      {/* Static / Live toggle */}
-      <div className="flex items-center justify-between">
-        <span className="text-[9px] text-muted-foreground font-medium">
-          {liveMode ? "Live Mode" : "Static Demo"}
-        </span>
-        <div className="flex items-center gap-1.5">
-          <span className="text-[8px] text-muted-foreground">Static</span>
-          <Switch checked={liveMode} onCheckedChange={setLiveMode} className="scale-75" />
-          <span className="text-[8px] text-muted-foreground">Live</span>
-        </div>
-      </div>
-
-      {liveMode && (
-        <div className="flex items-center gap-1 text-[9px] text-[hsl(var(--opyn-green))]">
-          <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--opyn-green))] animate-pulse" />
-          Metrics updating in real-time
-        </div>
-      )}
-
-      <div className="space-y-3">
-        {metricItems.map((m) => (
-          <div key={m.label} className={`rounded-xl border border-border p-3 space-y-1 transition-all duration-300 ${pulse && liveMode ? "border-[hsl(var(--opyn-green)/0.4)]" : ""}`}>
-            <p className="text-[9px] text-muted-foreground font-medium">{m.label}</p>
-            <p className="text-lg font-bold font-mono text-foreground">{m.value}</p>
-            <p className="text-[9px] text-muted-foreground">{m.sub}</p>
-            {/* Mini sparkline */}
-            {liveMode && <MiniSparkline value={m.raw} />}
-          </div>
-        ))}
-      </div>
-
-      <div className="border-t border-border pt-3 space-y-2">
-        <p className="text-[9px] font-semibold text-muted-foreground">COMPLIANCE</p>
-        {["HIPAA Check: Passed", "Data Access: Logged", "Transcript: Stored", "Decision Tree: Logged"].map((item) => (
-          <div key={item} className="flex items-center gap-1.5 text-[10px]">
-            <CheckCircle className="h-3 w-3 text-[hsl(var(--opyn-green))]" />
-            <span>{item}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/* Mini animated sparkline using CSS */
-function MiniSparkline({ value }: { value: number }) {
-  const [points, setPoints] = useState<number[]>(() => Array.from({ length: 8 }, () => 30 + Math.random() * 20));
-
-  useEffect(() => {
-    setPoints(prev => [...prev.slice(1), 20 + (value % 40) + Math.random() * 15]);
-  }, [value]);
-
-  const max = Math.max(...points, 1);
-  const h = 20;
-  const w = 100;
-  const step = w / (points.length - 1);
-  const pathD = points.map((p, i) => `${i === 0 ? "M" : "L"} ${i * step} ${h - (p / max) * h}`).join(" ");
+  if (!open) return null;
 
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-5 mt-1" preserveAspectRatio="none">
-      <path d={pathD} fill="none" stroke="hsl(var(--opyn-green))" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="transition-all duration-500" />
-    </svg>
+    <>
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 z-40 bg-black/10 backdrop-blur-[1px]"
+        onClick={onClose}
+      />
+
+      {/* Slide-in panel */}
+      <aside className="fixed right-0 top-0 bottom-0 z-50 w-[280px] flex flex-col border-l border-border shadow-xl overflow-hidden bg-card">
+        {/* Panel header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border/60 shrink-0">
+          <div className="flex items-center gap-2">
+            <Activity className="h-3.5 w-3.5 text-[hsl(var(--opyn-purple))]" />
+            <h3 className="text-[11px] font-semibold">AI Orchestration Activity</h3>
+          </div>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+
+        <div className="flex-1 px-4 py-3 space-y-4 overflow-y-auto">
+          {/* Static / Live toggle */}
+          <div className="flex items-center justify-between">
+            <span className="text-[9px] text-muted-foreground font-medium">
+              {liveMode ? "Live Mode" : "Static Demo"}
+            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[8px] text-muted-foreground">Static</span>
+              <Switch checked={liveMode} onCheckedChange={setLiveMode} className="scale-75" />
+              <span className="text-[8px] text-muted-foreground">Live</span>
+            </div>
+          </div>
+
+          {liveMode && (
+            <div className="flex items-center gap-1 text-[9px] text-[hsl(var(--opyn-green))]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--opyn-green))] animate-pulse" />
+              Metrics updating in real-time
+            </div>
+          )}
+
+          <div className="space-y-3">
+            {metricItems.map((m) => (
+              <div
+                key={m.label}
+                className={`rounded-xl border border-border p-3 space-y-1 transition-all duration-300 ${pulse && liveMode ? "border-[hsl(var(--opyn-green)/0.4)]" : ""}`}
+              >
+                <p className="text-[9px] text-muted-foreground font-medium">{m.label}</p>
+                <p className="text-lg font-bold font-mono text-foreground">{m.value}</p>
+                <p className="text-[9px] text-muted-foreground">{m.sub}</p>
+                {liveMode && <MiniSparkline value={m.raw} />}
+              </div>
+            ))}
+          </div>
+
+          <div className="border-t border-border pt-3 space-y-2">
+            <p className="text-[9px] font-semibold text-muted-foreground">COMPLIANCE</p>
+            {["HIPAA Check: Passed", "Data Access: Logged", "Transcript: Stored", "Decision Tree: Logged"].map((item) => (
+              <div key={item} className="flex items-center gap-1.5 text-[10px]">
+                <CheckCircle className="h-3 w-3 text-[hsl(var(--opyn-green))]" />
+                <span>{item}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </aside>
+    </>
   );
 }
 
 export function OpynHealthLayout() {
   const { setDeploymentMode } = useDashboard();
   const [portalMode, setPortalMode] = useState<OpynMode>("member");
+  const [orchestrationOpen, setOrchestrationOpen] = useState(false);
 
   return (
     <div className="min-h-screen flex flex-col bg-[hsl(var(--opyn-bg))]">
@@ -169,6 +193,16 @@ export function OpynHealthLayout() {
 
           <div className="h-5 w-px bg-border" />
 
+          {/* AI Orchestration trigger */}
+          <button
+            onClick={() => setOrchestrationOpen(true)}
+            className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-medium rounded bg-secondary text-muted-foreground hover:text-foreground transition-all relative"
+          >
+            <Activity className="h-3 w-3 text-[hsl(var(--opyn-purple))]" />
+            AI Activity
+            <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-[hsl(var(--opyn-green))] animate-pulse" />
+          </button>
+
           <button
             onClick={() => setDeploymentMode("white-label")}
             className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded bg-secondary text-muted-foreground hover:text-foreground transition-colors"
@@ -195,7 +229,7 @@ export function OpynHealthLayout() {
         </p>
       </div>
 
-      {/* Main content */}
+      {/* Main content — full width now */}
       <div className="flex flex-1 overflow-hidden">
         <main className="flex-1 overflow-y-auto p-5">
           {portalMode === "member" ? (
@@ -209,8 +243,10 @@ export function OpynHealthLayout() {
             </div>
           )}
         </main>
-        <OrchestrationSidebar />
       </div>
+
+      {/* Pop-out panel */}
+      <OrchestrationPanel open={orchestrationOpen} onClose={() => setOrchestrationOpen(false)} />
     </div>
   );
 }
