@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { useDashboard } from "./DashboardContext";
 
 export type EventStatus = "ai-routed" | "escalated" | "resolved" | "in-progress";
-export type CallerType = "Provider" | "Member" | "Broker";
+export type CallerType = "Provider" | "Member";
 
 export interface SimEvent {
   id: string;
@@ -93,12 +93,11 @@ interface SimulationState {
 
 const SimulationContext = createContext<SimulationState | null>(null);
 
-// Weighted caller type: 75% Provider, 25% Member, ~2% Broker (replaces Member slot occasionally)
+// Weighted caller type: 75% Provider, 25% Member
 function weightedCallerType(): CallerType {
   const r = Math.random();
   if (r < 0.75) return "Provider";
-  if (r < 0.98) return "Member";
-  return "Broker";
+  return "Member";
 }
 
 const PROVIDER_REASONS = [
@@ -111,12 +110,9 @@ const MEMBER_REASONS = [
   "Claims Status", "ID Card Request", "Deductible / OOP Balance Inquiry",
   "Pharmacy Coverage Question",
 ];
-const BROKER_REASONS = ["Group Eligibility File Correction"];
-
 function reasonForType(type: CallerType): string {
   if (type === "Provider") return PROVIDER_REASONS[Math.floor(Math.random() * PROVIDER_REASONS.length)];
-  if (type === "Member") return MEMBER_REASONS[Math.floor(Math.random() * MEMBER_REASONS.length)];
-  return BROKER_REASONS[0];
+  return MEMBER_REASONS[Math.floor(Math.random() * MEMBER_REASONS.length)];
 }
 
 const PAYERS = ["BCBS", "Aetna", "UHC", "Cigna", "Anthem"];

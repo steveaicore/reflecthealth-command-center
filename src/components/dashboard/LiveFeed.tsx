@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Phone, FileText, Zap } from "lucide-react";
 
-// Weighted pool: ~75% Provider, ~25% Member, rare Broker
+// Weighted pool: ~75% Provider, ~25% Member
 const CALL_TYPES = [
   // Provider (75%)
   "Provider — Benefits Verification — Cigna PPO",
