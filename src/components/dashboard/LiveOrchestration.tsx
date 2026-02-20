@@ -242,19 +242,16 @@ function ROIMetrics() {
 }
 
 function MetricsGrid({ items }: { items: { label: string; value: number; formatter: (n: number) => string; icon: React.ReactNode }[] }) {
-  const getTint = (label: string) => {
-    if (/saving|cost|roi/i.test(label)) return "tint-savings";
-    if (/fte|workforce/i.test(label)) return "tint-fte";
-    if (/call|cycle|volume|orchestr/i.test(label)) return "tint-calls";
-    return "";
-  };
-
   return (
     <div className="flex flex-col gap-1.5">
       <span className="text-[9px] font-semibold uppercase tracking-[0.15em] text-muted-foreground section-header-accent">Live Impact (Today)</span>
-      <div className={`grid ${items.length > 4 ? "grid-cols-3" : "grid-cols-2"} gap-2 live-impact-bg relative`}>
+      <div className={`grid ${items.length > 4 ? "grid-cols-3" : "grid-cols-2"} gap-2`}>
         {items.map((item) => (
-          <div key={item.label} className={`metric-card flex flex-col gap-1 p-2.5 reflect-border relative z-10 ${getTint(item.label)}`}>
+          <div
+            key={item.label}
+            className="flex flex-col gap-1 p-2.5 reflect-border rounded-2xl"
+            style={{ background: "hsl(335 80% 98%)", border: "1px solid hsl(335 60% 91%)", boxShadow: "0 2px 6px rgba(0,0,0,0.03)" }}
+          >
             <div className="flex items-center gap-1.5">
               <span className="text-primary">{item.icon}</span>
               <span className="text-[9px] text-muted-foreground">{item.label}</span>
