@@ -124,12 +124,13 @@ export function ExecutiveROI() {
         </div>
       </div>
 
-      {mode === "internal" && (
-        <div className="module-panel p-4 space-y-3">
-          <div className="flex justify-between text-xs">
-            <span className="text-muted-foreground">Annual Platform Cost</span>
-            <span className="font-mono text-foreground">${(platformParams.annualPlatformCost / 1000).toFixed(0)}K</span>
-          </div>
+      {/* Platform Investment — always visible */}
+      <div className="module-panel p-4 space-y-3">
+        <div className="flex justify-between text-xs">
+          <span className="text-muted-foreground font-semibold">Annual Platform Investment</span>
+          <span className="font-mono text-foreground">{fmtCurrency(platformParams.annualPlatformCost)}</span>
+        </div>
+        {mode === "internal" && (
           <Slider
             value={[platformParams.annualPlatformCost]}
             min={50000}
@@ -137,8 +138,8 @@ export function ExecutiveROI() {
             step={10000}
             onValueChange={([v]) => setPlatformParams({ annualPlatformCost: v })}
           />
-        </div>
-      )}
+        )}
+      </div>
 
       <FinancialBreakdownModal metric={breakdownMetric} onClose={() => setBreakdownMetric(null)} />
     </div>
