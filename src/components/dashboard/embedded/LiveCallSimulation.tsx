@@ -2,11 +2,73 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useSimulation } from "@/contexts/SimulationContext";
 import { useAudioEngine } from "@/contexts/AudioEngineContext";
 import { useDashboard } from "@/contexts/DashboardContext";
-import { Bot, User, AlertTriangle, CheckCircle2, Mic, MicOff } from "lucide-react";
+import { Bot, User, AlertTriangle, CheckCircle2, Mic, MicOff, Timer } from "lucide-react";
 import { AudioControlPanel } from "./AudioControlPanel";
 
-const CALLER_VOICE = "EXAVITQu4vr4xnSDxMaL"; // Sarah - natural human caller
-const AI_VOICE = "onwK4e9ZLuTAKqWW03F9"; // Daniel - professional AI agent
+const CALLER_VOICE = "EXAVITQu4vr4xnSDxMaL";
+const AI_VOICE = "onwK4e9ZLuTAKqWW03F9";
+
+// ── Call template pool ──
+interface CallTemplate {
+  intent: string;
+  confidenceRange: [number, number];
+  script: { speaker: "caller" | "ai"; text: string }[];
+}
+
+const CALL_TEMPLATES: CallTemplate[] = [
+  {
+    intent: "Benefits Verification",
+    confidenceRange: [88, 96],
+    script: [
+      { speaker: "caller", text: "Hi, I need to verify benefits for a member before scheduling a specialist visit." },
+      { speaker: "ai", text: "Of course. Can you provide the member ID and date of birth?" },
+      { speaker: "caller", text: "Member ID 4578921. Date of birth January 14, 1986." },
+      { speaker: "ai", text: "The member has active coverage. Specialist visits are covered with a thirty dollar copay. No prior auth required for in-network providers." },
+    ],
+  },
+  {
+    intent: "COB Verification",
+    confidenceRange: [82, 94],
+    script: [
+      { speaker: "caller", text: "I'm calling to verify coordination of benefits for a dual-coverage member." },
+      { speaker: "ai", text: "I can help with that. What's the member ID?" },
+      { speaker: "caller", text: "Member ID 7823456." },
+      { speaker: "ai", text: "This member has primary coverage through UHC and secondary through Aetna. UHC processes first, then Aetna covers the remaining balance up to plan limits." },
+    ],
+  },
+  {
+    intent: "Claim Status",
+    confidenceRange: [90, 97],
+    script: [
+      { speaker: "caller", text: "I'm calling about the status of claim number 45621." },
+      { speaker: "ai", text: "Let me look that up. Claim 45621 was submitted on February 12th and is currently approved for payment." },
+      { speaker: "caller", text: "When should we expect the payment?" },
+      { speaker: "ai", text: "Payment is scheduled for processing within five business days. The approved amount is four hundred and twelve dollars." },
+    ],
+  },
+  {
+    intent: "Prior Auth Status",
+    confidenceRange: [78, 90],
+    script: [
+      { speaker: "caller", text: "I need to check the status of a prior authorization for an MRI." },
+      { speaker: "ai", text: "Sure. Can you provide the authorization reference number?" },
+      { speaker: "caller", text: "It's PA-2024-88341." },
+      { speaker: "ai", text: "That authorization was approved yesterday. The MRI is cleared for scheduling at any in-network imaging facility. Valid for ninety days." },
+    ],
+  },
+  {
+    intent: "ID Card Request",
+    confidenceRange: [92, 98],
+    script: [
+      { speaker: "caller", text: "A member is requesting a replacement ID card." },
+      { speaker: "ai", text: "I can process that. What is the member ID?" },
+      { speaker: "caller", text: "Member 5529103." },
+      { speaker: "ai", text: "A new ID card has been requested and will be mailed within seven to ten business days. I've also sent a digital copy to the member's email on file." },
+    ],
+  },
+];
+
+type CallStatus = "idle" | "incoming" | "processing" | "resolved" | "escalated";
 
 interface TranscriptLine {
   id: string;
@@ -15,25 +77,8 @@ interface TranscriptLine {
   typing?: boolean;
 }
 
-const SCRIPTED_CALLS = [
-  [
-    { speaker: "caller" as const, text: "Hi, I'm calling about the status of my claim, invoice number 45621." },
-    { speaker: "ai" as const, text: "I can help with that. Let me look up your claim status right away." },
-    { speaker: "ai" as const, text: "I found your claim. Invoice 45621 was submitted on February 12th and is currently approved for payment." },
-    { speaker: "caller" as const, text: "Great, and what about my eligibility for the specialist visit?" },
-    { speaker: "ai" as const, text: "Your plan covers specialist visits with a 30 dollar copay. No prior authorization required for in-network providers." },
-  ],
-  [
-    { speaker: "caller" as const, text: "I need to verify benefits for a member, ID number 8834." },
-    { speaker: "ai" as const, text: "Sure, pulling up member 8834 now." },
-    { speaker: "ai" as const, text: "Member is active on the Gold PPO plan. Deductible met. Out-of-pocket max at 60 percent." },
-    { speaker: "caller" as const, text: "Does that include the behavioral health carve-out?" },
-    { speaker: "ai" as const, text: "Yes, behavioral health is included through the Optum network. No separate authorization needed for outpatient visits." },
-  ],
-];
-
 export function LiveCallSimulation() {
-  const { events, pipeline } = useSimulation();
+  const { pipeline } = useSimulation();
   const { results } = useDashboard();
   const {
     audioEnabled, isLiveSimulation, setIsLiveSimulation,
@@ -42,118 +87,177 @@ export function LiveCallSimulation() {
   } = useAudioEngine();
 
   const [transcript, setTranscript] = useState<TranscriptLine[]>([]);
-  const [callActive, setCallActive] = useState(false);
-  const [callResolved, setCallResolved] = useState<"deflected" | "escalated" | null>(null);
+  const [callStatus, setCallStatus] = useState<CallStatus>("idle");
+  const [currentIntent, setCurrentIntent] = useState<string>("");
+  const [callConfidence, setCallConfidence] = useState(0);
+  const [callCount, setCallCount] = useState(0);
+  const [metrics, setMetrics] = useState({ deflected: 0, escalated: 0, minutesSaved: 0, costAvoided: 0 });
+
   const callIndexRef = useRef(0);
   const isRunningRef = useRef(false);
-  const activeEvent = events[0];
+  const abortRef = useRef(false);
 
   const runCall = useCallback(async () => {
-    if (isRunningRef.current || !audioEnabled) return;
+    if (isRunningRef.current) return;
     isRunningRef.current = true;
-    setCallActive(true);
-    setCallResolved(null);
-    setTranscript([]);
+    abortRef.current = false;
 
-    const script = SCRIPTED_CALLS[callIndexRef.current % SCRIPTED_CALLS.length];
+    const template = CALL_TEMPLATES[callIndexRef.current % CALL_TEMPLATES.length];
     callIndexRef.current++;
 
-    for (const line of script) {
-      if (!isRunningRef.current) break;
+    // Generate confidence from template range
+    const [lo, hi] = template.confidenceRange;
+    const conf = Math.floor(lo + Math.random() * (hi - lo));
+
+    setCurrentIntent(template.intent);
+    setCallConfidence(conf);
+    setCallStatus("incoming");
+    setTranscript([]);
+
+    // Brief "incoming" visual
+    await new Promise((r) => setTimeout(r, 800));
+    if (abortRef.current) { isRunningRef.current = false; return; }
+
+    setCallStatus("processing");
+
+    for (const line of template.script) {
+      if (abortRef.current) break;
 
       const id = `line-${Date.now()}-${Math.random()}`;
 
-      // Show typing indicator
+      // Show line with typing indicator
       setTranscript((prev) => [...prev, { id, speaker: line.speaker, text: line.text, typing: true }]);
 
-      // Play audio
+      // Play audio (awaits completion — mutex in engine prevents overlap)
       const voiceId = line.speaker === "caller" ? CALLER_VOICE : AI_VOICE;
       await playTTS(line.text, voiceId, line.speaker === "ai" ? 0.5 : 0.35);
 
-      // Remove typing indicator, show final text
-      setTranscript((prev) =>
-        prev.map((l) => (l.id === id ? { ...l, typing: false } : l))
-      );
+      if (abortRef.current) break;
 
-      // Small pause between lines
-      await new Promise((r) => setTimeout(r, 600));
+      // Remove typing indicator
+      setTranscript((prev) => prev.map((l) => (l.id === id ? { ...l, typing: false } : l)));
+
+      // 300ms buffer between speakers
+      await new Promise((r) => setTimeout(r, 300));
     }
 
-    // Determine outcome based on confidence
-    const conf = pipeline.confidence;
+    if (abortRef.current) { isRunningRef.current = false; return; }
+
+    // Determine outcome
     const deflected = conf >= confidenceThreshold;
-    setCallResolved(deflected ? "deflected" : "escalated");
+    const outcome = deflected ? "resolved" as const : "escalated" as const;
+    setCallStatus(outcome);
+    setCallCount((c) => c + 1);
+
+    const costSaved = deflected ? 4.32 : 0;
+    const minSaved = deflected ? 6 : 0;
+
+    setMetrics((prev) => ({
+      deflected: prev.deflected + (deflected ? 1 : 0),
+      escalated: prev.escalated + (deflected ? 0 : 1),
+      minutesSaved: prev.minutesSaved + minSaved,
+      costAvoided: +(prev.costAvoided + costSaved).toFixed(2),
+    }));
+
     setCurrentCallOutcome({
       callDeflected: deflected,
       escalationAvoided: deflected,
-      costAvoided: deflected ? 4.32 : 0,
+      costAvoided: costSaved,
       confidence: conf,
     });
 
     isRunningRef.current = false;
-    setCallActive(false);
-  }, [audioEnabled, pipeline.confidence, confidenceThreshold, playTTS, setCurrentCallOutcome]);
+  }, [confidenceThreshold, playTTS, setCurrentCallOutcome]);
 
-  // Auto-trigger calls when live simulation is on and new events arrive
+  // Auto-advance: after resolved/escalated, wait then start next call
   useEffect(() => {
-    if (!isLiveSimulation || !audioEnabled || isRunningRef.current) return;
-    const timer = setTimeout(() => runCall(), 2000);
-    return () => clearTimeout(timer);
-  }, [isLiveSimulation, audioEnabled, events.length, runCall]);
+    if (!isLiveSimulation || !audioEnabled) return;
+    if (callStatus === "resolved" || callStatus === "escalated") {
+      const timer = setTimeout(() => {
+        if (isLiveSimulation && audioEnabled) runCall();
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+    if (callStatus === "idle") {
+      const timer = setTimeout(() => {
+        if (isLiveSimulation && audioEnabled) runCall();
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [callStatus, isLiveSimulation, audioEnabled, runCall]);
+
+  const handleToggle = () => {
+    if (isLiveSimulation) {
+      setIsLiveSimulation(false);
+      abortRef.current = true;
+      stopAudio();
+      isRunningRef.current = false;
+      setCallStatus("idle");
+    } else {
+      setIsLiveSimulation(true);
+      setCallStatus("idle");
+    }
+  };
 
   return (
     <div className="p-3 space-y-3 five9-panel-bg h-full flex flex-col">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-five9-muted">
-          Live AI Call Simulation
+        <div>
+          <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-five9-muted">
+            Live AI Call Simulation
+          </div>
+          {currentIntent && callStatus !== "idle" && (
+            <div className="text-[9px] text-five9-muted mt-0.5">
+              {currentIntent} · Confidence {callConfidence}%
+            </div>
+          )}
         </div>
-        <button
-          onClick={() => {
-            if (isLiveSimulation) {
-              setIsLiveSimulation(false);
-              stopAudio();
-              isRunningRef.current = false;
-            } else {
-              setIsLiveSimulation(true);
-            }
-          }}
-          className={`flex items-center gap-1 px-2 py-1 text-[9px] font-semibold rounded transition-all ${
-            isLiveSimulation
-              ? "five9-accent-bg text-white"
-              : "bg-secondary text-five9-muted hover:text-foreground"
-          }`}
-        >
-          {isLiveSimulation ? <Mic className="h-2.5 w-2.5" /> : <MicOff className="h-2.5 w-2.5" />}
-          {isLiveSimulation ? "LIVE" : "OFF"}
-        </button>
+        <div className="flex items-center gap-2">
+          {callCount > 0 && (
+            <span className="text-[9px] font-mono text-five9-muted">#{callCount}</span>
+          )}
+          <button
+            onClick={handleToggle}
+            className={`flex items-center gap-1 px-2 py-1 text-[9px] font-semibold rounded transition-all ${
+              isLiveSimulation
+                ? "five9-accent-bg text-white"
+                : "bg-secondary text-five9-muted hover:text-foreground"
+            }`}
+          >
+            {isLiveSimulation ? <Mic className="h-2.5 w-2.5" /> : <MicOff className="h-2.5 w-2.5" />}
+            {isLiveSimulation ? "LIVE" : "OFF"}
+          </button>
+        </div>
       </div>
 
-      {/* Resolution banner */}
-      {callResolved && (
-        <div className={`rounded p-2 flex items-center gap-2 text-[11px] font-medium ${
-          callResolved === "deflected"
-            ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-700"
-            : "bg-amber-500/10 border border-amber-500/20 text-amber-700"
-        }`}>
-          {callResolved === "deflected" ? (
-            <>
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              Resolved by AI — No agent intervention required
-            </>
-          ) : (
-            <>
-              <AlertTriangle className="h-3.5 w-3.5" />
-              Escalated to Agent — Confidence Below Threshold ({confidenceThreshold}%)
-            </>
-          )}
+      {/* Status banner */}
+      {callStatus === "incoming" && (
+        <div className="rounded p-2 flex items-center gap-2 text-[11px] font-medium bg-primary/10 border border-primary/20 text-primary animate-pulse">
+          <Timer className="h-3.5 w-3.5" />
+          Incoming Call — {currentIntent}
+        </div>
+      )}
+
+      {callStatus === "resolved" && (
+        <div className="rounded p-2 flex items-center gap-2 text-[11px] font-medium bg-emerald-500/10 border border-emerald-500/20 text-emerald-700">
+          <CheckCircle2 className="h-3.5 w-3.5" />
+          Resolved by AI — No agent intervention required
+        </div>
+      )}
+
+      {callStatus === "escalated" && (
+        <div className="rounded p-2 flex items-center gap-2 text-[11px] font-medium bg-amber-500/10 border border-amber-500/20 text-amber-700">
+          <AlertTriangle className="h-3.5 w-3.5" />
+          Escalated to Agent — Confidence {callConfidence}% &lt; {confidenceThreshold}%
         </div>
       )}
 
       {/* Transcript */}
       <div className="space-y-2 flex-1 overflow-y-auto max-h-[300px]">
-        {transcript.length === 0 && !callActive && (
+        {transcript.length === 0 && callStatus === "idle" && (
           <div className="text-[11px] text-five9-muted text-center py-8">
-            {isLiveSimulation ? "Waiting for next call..." : "Enable Live Simulation to start"}
+            {isLiveSimulation ? "Starting next call..." : "Enable Live Simulation to start"}
           </div>
         )}
         {transcript.map((line) => (
@@ -183,18 +287,43 @@ export function LiveCallSimulation() {
         ))}
       </div>
 
-      {/* Call outcome overlay */}
-      {callResolved === "deflected" && (
+      {/* Outcome details */}
+      {callStatus === "resolved" && (
         <div className="five9-card p-2 space-y-1 five9-active-border">
           <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-[10px]">
             <span className="text-five9-muted">Outcome:</span>
             <span className="font-medium text-emerald-600">Call Deflected</span>
             <span className="text-five9-muted">Confidence:</span>
-            <span className="font-medium font-mono text-foreground">{pipeline.confidence}%</span>
+            <span className="font-medium font-mono text-foreground">{callConfidence}%</span>
             <span className="text-five9-muted">Cost Avoided:</span>
             <span className="font-medium font-mono text-emerald-600">+$4.32</span>
-            <span className="text-five9-muted">Escalation:</span>
-            <span className="font-medium text-emerald-600">Avoided</span>
+            <span className="text-five9-muted">Minutes Saved:</span>
+            <span className="font-medium font-mono text-emerald-600">+6 min</span>
+          </div>
+        </div>
+      )}
+
+      {/* Running metrics */}
+      {(metrics.deflected > 0 || metrics.escalated > 0) && (
+        <div className="five9-card p-2">
+          <div className="text-[9px] font-semibold uppercase tracking-[0.12em] text-five9-muted mb-1">Session Metrics</div>
+          <div className="grid grid-cols-4 gap-1 text-[10px]">
+            <div className="text-center">
+              <div className="font-bold font-mono text-emerald-600">{metrics.deflected}</div>
+              <div className="text-five9-muted">Deflected</div>
+            </div>
+            <div className="text-center">
+              <div className="font-bold font-mono text-amber-600">{metrics.escalated}</div>
+              <div className="text-five9-muted">Escalated</div>
+            </div>
+            <div className="text-center">
+              <div className="font-bold font-mono text-foreground">{metrics.minutesSaved}</div>
+              <div className="text-five9-muted">Min Saved</div>
+            </div>
+            <div className="text-center">
+              <div className="font-bold font-mono text-emerald-600">${metrics.costAvoided}</div>
+              <div className="text-five9-muted">Avoided</div>
+            </div>
           </div>
         </div>
       )}
