@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { DashboardProvider, useDashboard } from "@/contexts/DashboardContext";
 import { SimulationProvider } from "@/contexts/SimulationContext";
+import { AudioEngineProvider } from "@/contexts/AudioEngineContext";
 import { Header } from "@/components/dashboard/Header";
 import { ControlsDrawer } from "@/components/dashboard/ControlsDrawer";
 import { KPISidebar } from "@/components/dashboard/KPISidebar";
@@ -9,7 +10,6 @@ import { Module2 } from "@/components/dashboard/Module2";
 import { Module3 } from "@/components/dashboard/Module3";
 import { ExecutiveROI } from "@/components/dashboard/ExecutiveROI";
 import { LiveOrchestration } from "@/components/dashboard/LiveOrchestration";
-import { ImmersiveAudio } from "@/components/dashboard/ImmersiveAudio";
 import { DashboardFooter } from "@/components/dashboard/Footer";
 import { Five9Layout } from "@/components/dashboard/embedded/Five9Layout";
 import { TransitionOverlay } from "@/components/dashboard/embedded/TransitionOverlay";
@@ -28,29 +28,29 @@ function DashboardContent() {
 
   return (
     <SimulationProvider>
-      <TransitionOverlay mode={deploymentMode} visible={showTransition} />
+      <AudioEngineProvider>
+        <TransitionOverlay mode={deploymentMode} visible={showTransition} />
 
-      {deploymentMode === "embedded" ? (
-        <Five9Layout />
-      ) : (
-        <div className="min-h-screen flex flex-col bg-background">
-          <Header />
-          <div className="flex flex-1 overflow-hidden">
-            <main className="flex-1 overflow-y-auto p-5 space-y-4">
-              <LiveOrchestration />
-              {activeTab === "contact" && <Module1 />}
-              {activeTab === "claims" && <Module2 />}
-              {activeTab === "network" && <Module3 />}
-              {activeTab === "roi" && <ExecutiveROI />}
-            </main>
-            <KPISidebar />
+        {deploymentMode === "embedded" ? (
+          <Five9Layout />
+        ) : (
+          <div className="min-h-screen flex flex-col bg-background">
+            <Header />
+            <div className="flex flex-1 overflow-hidden">
+              <main className="flex-1 overflow-y-auto p-5 space-y-4">
+                <LiveOrchestration />
+                {activeTab === "contact" && <Module1 />}
+                {activeTab === "claims" && <Module2 />}
+                {activeTab === "network" && <Module3 />}
+                {activeTab === "roi" && <ExecutiveROI />}
+              </main>
+              <KPISidebar />
+            </div>
+            <DashboardFooter />
+            <ControlsDrawer />
           </div>
-          <DashboardFooter />
-          <ControlsDrawer />
-        </div>
-      )}
-
-      <ImmersiveAudio />
+        )}
+      </AudioEngineProvider>
     </SimulationProvider>
   );
 }

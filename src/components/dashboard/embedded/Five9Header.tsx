@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Circle, ChevronDown, Monitor, Download } from "lucide-react";
 import { useDashboard } from "@/contexts/DashboardContext";
+import { useAudioEngine } from "@/contexts/AudioEngineContext";
 import { ExportSummary } from "../ExportSummary";
 import penguinLogo from "@/assets/penguin-ai-logo.png";
 import type { Five9Tab } from "./Five9Layout";
@@ -12,6 +13,7 @@ interface Five9HeaderProps {
 
 export function Five9Header({ activeTab, setActiveTab }: Five9HeaderProps) {
   const { setDeploymentMode } = useDashboard();
+  const { audioEnabled, setAudioEnabled } = useAudioEngine();
   const [elapsed, setElapsed] = useState(0);
   const [exportOpen, setExportOpen] = useState(false);
 
@@ -56,6 +58,14 @@ export function Five9Header({ activeTab, setActiveTab }: Five9HeaderProps) {
       </div>
 
       <div className="flex items-center gap-4">
+        <button
+          onClick={() => setAudioEnabled(!audioEnabled)}
+          className={`flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded transition-colors ${
+            audioEnabled ? "bg-emerald-500/30 text-emerald-300" : "bg-white/10 text-white/70 hover:bg-white/20 hover:text-white"
+          }`}
+        >
+          {audioEnabled ? "🔊 Audio ON" : "🔇 Audio OFF"}
+        </button>
         <button
           onClick={() => setExportOpen(true)}
           className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded bg-white/10 text-white/70 hover:bg-white/20 hover:text-white transition-colors"

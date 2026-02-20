@@ -89,10 +89,6 @@ interface SimulationState {
     marginExpansionPct: number;
   };
   isRunning: boolean;
-  audioEnabled: boolean;
-  setAudioEnabled: (v: boolean) => void;
-  shouldPlayAudio: boolean;
-  lastAudioText: string;
 }
 
 const SimulationContext = createContext<SimulationState | null>(null);
@@ -103,14 +99,6 @@ const REASONS = [
   "Benefits Verification", "Referral Check", "COB Verification", "Claim Appeal"
 ];
 const PAYERS = ["BCBS", "Aetna", "UHC", "Cigna", "Humana", "Anthem", "Kaiser"];
-const AUDIO_TEXTS = [
-  "Your claim status for invoice 45621 has been processed and approved.",
-  "Your prior authorization request has been received and is under review.",
-  "Eligibility has been confirmed for the requested procedure.",
-  "Your referral has been approved and forwarded to the specialist.",
-  "The benefits inquiry shows full coverage under your current plan.",
-  "Your ID card request has been processed and will arrive within 5 business days.",
-];
 
 const CLAIMS_TYPES = [
   "Claim Received", "Claim Auto-Adjudicated", "Claim Flagged for Manual Review",
@@ -207,9 +195,6 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
   const [networkCounters, setNetworkCounters] = useState({ savingsGenerated: 0, oonAvoidanceRate: 78, marketplaceUtilLift: 23, pmpmReduction: 0, memberDisruptionReductionPct: 91 });
   const [roiCounters, setRoiCounters] = useState({ totalAnnualizedSavings: 0, roiMultiple: 0, paybackMonths: 8.2, productivityLiftPct: 34, marginExpansionPct: 0 });
 
-  const [audioEnabled, setAudioEnabled] = useState(false);
-  const [shouldPlayAudio, setShouldPlayAudio] = useState(false);
-  const [lastAudioText, setLastAudioText] = useState("");
   const callCount = useRef(0);
   const pipelineTimer = useRef<ReturnType<typeof setTimeout>>();
 
@@ -294,11 +279,6 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
       }
 
       callCount.current += 1;
-      if (callCount.current % 6 === 0 && audioEnabled && isDeflected) {
-        setShouldPlayAudio(true);
-        setLastAudioText(AUDIO_TEXTS[Math.floor(Math.random() * AUDIO_TEXTS.length)]);
-        setTimeout(() => setShouldPlayAudio(false), 500);
-      }
     }, intervalMs);
 
     return () => {
@@ -306,7 +286,7 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
       if (pipelineTimer.current) clearTimeout(pipelineTimer.current);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, intervalMs, callParams, audioEnabled, animatePipeline]);
+  }, [mode, intervalMs, callParams, animatePipeline]);
 
   return (
     <SimulationContext.Provider value={{
@@ -314,7 +294,6 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
       pipeline, claimsPipeline, networkPipeline, roiPipeline,
       counters, claimsCounters, networkCounters, roiCounters,
       isRunning: true,
-      audioEnabled, setAudioEnabled, shouldPlayAudio, lastAudioText,
     }}>
       {children}
     </SimulationContext.Provider>

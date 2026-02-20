@@ -5,7 +5,7 @@ import { Five9Sidebar } from "./Five9Sidebar";
 import { Five9Header } from "./Five9Header";
 import { Five9AgentPanel } from "./Five9AgentPanel";
 import { Five9AIPanel } from "./Five9AIPanel";
-import { Five9TranscriptPanel } from "./Five9TranscriptPanel";
+import { LiveCallSimulation } from "./LiveCallSimulation";
 import { FloatingROIWidget } from "./FloatingROIWidget";
 import { Five9SupervisorView } from "./Five9SupervisorView";
 import { Five9EmailView } from "./Five9EmailView";
@@ -47,7 +47,7 @@ export function Five9Layout() {
               <Five9AgentPanel />
             </div>
             <div className="col-span-5 border-r five9-border overflow-y-auto">
-              <Five9TranscriptPanel />
+              <LiveCallSimulation />
             </div>
             <div className="col-span-4 overflow-y-auto">
               <Five9AIPanel />
