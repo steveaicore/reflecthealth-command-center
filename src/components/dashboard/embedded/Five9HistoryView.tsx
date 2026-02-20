@@ -18,7 +18,7 @@ interface HistoryItem {
 const HISTORY: HistoryItem[] = [
   { id: "h1", type: "call", caller: "Provider", reason: "Claims Status", payer: "BCBS", aiAssisted: true, outcome: "resolved", duration: "2:14", timeSaved: "5.2 min", timestamp: "10:42 AM" },
   { id: "h2", type: "email", caller: "Member", reason: "ID Card Request", payer: "Aetna", aiAssisted: true, outcome: "resolved", duration: "1:08", timeSaved: "6.8 min", timestamp: "10:28 AM" },
-  { id: "h3", type: "call", caller: "Broker", reason: "Eligibility Inquiry", payer: "UHC", aiAssisted: false, outcome: "escalated", duration: "8:32", timeSaved: "0 min", timestamp: "10:15 AM" },
+  { id: "h3", type: "call", caller: "Provider", reason: "Eligibility Inquiry", payer: "UHC", aiAssisted: false, outcome: "escalated", duration: "8:32", timeSaved: "0 min", timestamp: "10:15 AM" },
   { id: "h4", type: "chat", caller: "Member", reason: "Benefits Verification", payer: "Cigna", aiAssisted: true, outcome: "resolved", duration: "1:45", timeSaved: "4.5 min", timestamp: "9:58 AM" },
   { id: "h5", type: "call", caller: "Provider", reason: "PA Status", payer: "Humana", aiAssisted: true, outcome: "resolved", duration: "2:52", timeSaved: "5.8 min", timestamp: "9:41 AM" },
   { id: "h6", type: "call", caller: "Member", reason: "COB Verification", payer: "BCBS", aiAssisted: true, outcome: "resolved", duration: "1:30", timeSaved: "6.1 min", timestamp: "9:22 AM" },
