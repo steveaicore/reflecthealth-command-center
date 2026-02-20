@@ -165,22 +165,28 @@ function ROIFeed() {
 
 function Pipeline({ stages, pipeline }: { stages: string[]; pipeline: { activeStage: number; confidence: number; resolutionTime: number; outcome: string } }) {
   return (
-    <div className="flex flex-col gap-2 flex-1">
+    <div className="flex flex-col gap-2">
       <span className="type-micro uppercase tracking-[0.15em] text-muted-foreground section-header-accent">AI Orchestration Flow</span>
-      <div className="flow-bg rounded-lg p-3 border border-border flex flex-col gap-3 flex-1">
-        <div className="flex items-center gap-1 flex-wrap">
+      <div className="flow-bg rounded-lg border border-border flex flex-col gap-0" style={{ padding: "20px" }}>
+        {/* Step chips */}
+        <div className="flex items-center gap-1 flex-wrap" style={{ gap: "8px" }}>
           {stages.map((stage, i) => (
-            <div key={stage} className="flex items-center gap-1 shrink-0">
-              <div className={`px-2 py-1 rounded text-[11px] font-medium transition-all duration-300 ${
+            <div key={stage} className="flex items-center shrink-0" style={{ gap: "4px" }}>
+              <div className={`rounded transition-all duration-300 font-medium ${
                 i <= pipeline.activeStage ? "reflect-gradient text-white" : "bg-secondary text-muted-foreground"
-              }`}>{stage}</div>
+              }`} style={{ padding: "8px 12px", fontSize: "13px", fontWeight: 500, height: "32px", display: "flex", alignItems: "center" }}>
+                {stage}
+              </div>
               {i < stages.length - 1 && (
-                <ArrowRight className={`h-2.5 w-2.5 shrink-0 transition-colors ${i < pipeline.activeStage ? "text-primary" : "text-muted-foreground/30"}`} />
+                <ArrowRight className={`shrink-0 transition-colors ${i < pipeline.activeStage ? "text-primary" : "text-muted-foreground/30"}`} style={{ width: "10px", height: "10px" }} />
               )}
             </div>
           ))}
         </div>
-        <div className="flex items-center gap-4 pt-2 border-t border-border">
+        {/* Divider */}
+        <div className="border-t border-border" style={{ marginTop: "16px", marginBottom: "16px" }} />
+        {/* Metadata row */}
+        <div className="flex items-center gap-4" style={{ alignSelf: "flex-start", flexGrow: 0 }}>
           <span className="type-body">Confidence: <span className="font-mono font-semibold text-foreground">{pipeline.confidence}%</span></span>
           <span className="type-body">Processing: <span className="font-mono font-semibold text-foreground">{pipeline.resolutionTime}s</span></span>
           <span className="type-body">Outcome: <span className={`font-semibold ${pipeline.outcome === "Escalated" || pipeline.outcome === "Exception" ? "text-amber-600" : "text-primary"}`}>{pipeline.outcome}</span></span>
@@ -243,9 +249,9 @@ function ROIMetrics() {
 
 function MetricsGrid({ items }: { items: { label: string; value: number; formatter: (n: number) => string; icon: React.ReactNode }[] }) {
   return (
-    <div className="flex flex-col gap-1.5 flex-1">
+    <div className="flex flex-col gap-1.5">
       <span className="type-micro uppercase tracking-[0.15em] text-muted-foreground section-header-accent">Live Impact (Today)</span>
-      <div className={`grid ${items.length > 4 ? "grid-cols-3" : "grid-cols-2"} gap-2 flex-1`}>
+      <div className={`grid ${items.length > 4 ? "grid-cols-3" : "grid-cols-2"} gap-2`}>
         {items.map((item) => (
           <div
             key={item.label}
@@ -306,10 +312,10 @@ export function LiveOrchestration() {
             <span className="ml-2 type-body">{config.subtitle}</span>
           </div>
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-stretch">
-          <div className="flex flex-col h-full">{feedMap[activeTab]}</div>
-          <div className="flex flex-col h-full"><Pipeline stages={config.pipelineStages} pipeline={pipelineMap[activeTab]} /></div>
-          <div className="flex flex-col h-full">{metricsMap[activeTab]}</div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
+          <div className="flex flex-col">{feedMap[activeTab]}</div>
+          <div className="flex flex-col"><Pipeline stages={config.pipelineStages} pipeline={pipelineMap[activeTab]} /></div>
+          <div className="flex flex-col">{metricsMap[activeTab]}</div>
         </div>
       </div>
     </div>
