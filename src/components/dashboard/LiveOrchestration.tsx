@@ -1,49 +1,73 @@
 import { useState } from "react";
-import { useSimulation, type EventStatus } from "@/contexts/SimulationContext";
+import { useSimulation, type SimEvent, type ClaimsEvent, type NetworkEvent, type ROIEvent } from "@/contexts/SimulationContext";
+import { useDashboard, type DashboardTab } from "@/contexts/DashboardContext";
 import { CountUpValue } from "./CountUpValue";
 import { fmtCurrency, fmtDecimal } from "@/lib/format";
-import { Phone, Zap, Users, DollarSign, ArrowRight } from "lucide-react";
+import { Phone, FileText, Globe, TrendingUp, Zap, Users, DollarSign, ArrowRight, ShieldCheck, AlertTriangle, CheckCircle } from "lucide-react";
 import { InteractionDetailModal } from "./InteractionDetailModal";
-import type { SimEvent } from "@/contexts/SimulationContext";
 
-const STATUS_CONFIG: Record<EventStatus, { label: string; className: string }> = {
-  "ai-routed": { label: "Routed to AI", className: "text-primary bg-primary/10" },
-  "escalated": { label: "Escalated", className: "text-amber-600 bg-amber-50" },
-  "resolved": { label: "Resolved", className: "text-emerald-600 bg-emerald-50" },
-  "in-progress": { label: "In Progress", className: "text-muted-foreground bg-secondary" },
+/* ─── Tab Config ─── */
+
+const TAB_CONFIG: Record<DashboardTab, {
+  title: string;
+  subtitle: string;
+  icon: React.ReactNode;
+  pipelineStages: string[];
+}> = {
+  contact: {
+    title: "Live Operational Stream",
+    subtitle: "Member & Provider Interaction Automation",
+    icon: <Phone className="h-3.5 w-3.5" />,
+    pipelineStages: ["Incoming", "Intent Classification", "Policy Validation", "System Query", "Response Generation", "Resolved"],
+  },
+  claims: {
+    title: "Live Claims Processing Stream",
+    subtitle: "Adjudication & Review Intelligence",
+    icon: <FileText className="h-3.5 w-3.5" />,
+    pipelineStages: ["Claim Intake", "Code Extraction", "Policy Mapping", "Fraud Check", "Adjudication", "Payment Decision"],
+  },
+  network: {
+    title: "Live Network Optimization Activity",
+    subtitle: "Contract & Ecosystem Optimization",
+    icon: <Globe className="h-3.5 w-3.5" />,
+    pipelineStages: ["Request", "Network Match", "Contract Optimization", "Coverage Validation", "Cost Calculation", "Outcome"],
+  },
+  roi: {
+    title: "Live Financial Performance Engine",
+    subtitle: "Financial Performance Orchestration",
+    icon: <TrendingUp className="h-3.5 w-3.5" />,
+    pipelineStages: ["Operational Event", "Financial Attribution", "Margin Impact", "ROI Calculation", "Forecast Update"],
+  },
 };
 
-const PIPELINE_STAGES = [
-  "Incoming", "Intent Classification", "Policy Validation",
-  "System Query", "Response Generation", "Resolved"
-];
+/* ─── Contact Feed ─── */
 
-function EventFeed() {
+function ContactFeed() {
   const { events } = useSimulation();
   const [selectedEvent, setSelectedEvent] = useState<SimEvent | null>(null);
 
+  const STATUS_CONFIG = {
+    "ai-routed": { label: "Routed to AI", className: "text-primary bg-primary/10" },
+    "escalated": { label: "Escalated", className: "text-amber-600 bg-amber-50" },
+    "resolved": { label: "Resolved", className: "text-emerald-600 bg-emerald-50" },
+    "in-progress": { label: "In Progress", className: "text-muted-foreground bg-secondary" },
+  };
+
   return (
     <div className="flex flex-col gap-1 overflow-hidden max-h-[200px]">
-      <span className="text-[9px] font-semibold uppercase tracking-[0.15em] text-muted-foreground mb-1">
-        Live Event Feed
-      </span>
+      <span className="text-[9px] font-semibold uppercase tracking-[0.15em] text-muted-foreground mb-1">Live Event Feed</span>
       {events.slice(0, 6).map((evt) => {
         const status = STATUS_CONFIG[evt.status];
         return (
-          <button
-            key={evt.id}
-            onClick={() => setSelectedEvent(evt)}
-            className="feed-item-enter flex items-center justify-between gap-2 px-2.5 py-1.5 rounded border border-border bg-card hover:border-primary/30 transition-colors text-left w-full"
-          >
+          <button key={evt.id} onClick={() => setSelectedEvent(evt)}
+            className="feed-item-enter flex items-center justify-between gap-2 px-2.5 py-1.5 rounded border border-border bg-card hover:border-primary/30 transition-colors text-left w-full">
             <div className="flex items-center gap-2 min-w-0">
               <Phone className="h-3 w-3 text-primary shrink-0" />
               <span className="text-[10px] text-foreground truncate">
                 <span className="text-muted-foreground">Incoming:</span> {evt.callerType} — {evt.reason} — {evt.payer}
               </span>
             </div>
-            <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full shrink-0 ${status.className}`}>
-              {status.label}
-            </span>
+            <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full shrink-0 ${status.className}`}>{status.label}</span>
           </button>
         );
       })}
@@ -52,78 +76,176 @@ function EventFeed() {
   );
 }
 
-function AIPipeline() {
-  const { pipeline } = useSimulation();
+/* ─── Claims Feed ─── */
+
+function ClaimsFeed() {
+  const { claimsEvents } = useSimulation();
+  const statusColors = { auto: "text-emerald-600 bg-emerald-50", manual: "text-amber-600 bg-amber-50", exception: "text-red-500 bg-red-50" };
+  const statusLabels = { auto: "Auto", manual: "Manual", exception: "Exception" };
 
   return (
+    <div className="flex flex-col gap-1 overflow-hidden max-h-[200px]">
+      <span className="text-[9px] font-semibold uppercase tracking-[0.15em] text-muted-foreground mb-1">Live Claims Feed</span>
+      {claimsEvents.slice(0, 6).map((evt) => (
+        <div key={evt.id} className="feed-item-enter flex items-center justify-between gap-2 px-2.5 py-1.5 rounded border border-border bg-card text-left w-full">
+          <div className="flex items-center gap-2 min-w-0">
+            <FileText className="h-3 w-3 text-primary shrink-0" />
+            <span className="text-[10px] text-foreground truncate">
+              {evt.type} — <span className="font-mono text-muted-foreground">{evt.claimId}</span>
+            </span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-[9px] font-mono text-muted-foreground">{Math.round(evt.confidence)}%</span>
+            <span className="text-[9px] font-mono text-muted-foreground">{evt.adjudicationTimeSec.toFixed(1)}s</span>
+            {evt.manualReviewAvoided ? <CheckCircle className="h-3 w-3 text-emerald-500" /> : <AlertTriangle className="h-3 w-3 text-amber-500" />}
+            <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full ${statusColors[evt.status]}`}>{statusLabels[evt.status]}</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ─── Network Feed ─── */
+
+function NetworkFeed() {
+  const { networkEvents } = useSimulation();
+
+  return (
+    <div className="flex flex-col gap-1 overflow-hidden max-h-[200px]">
+      <span className="text-[9px] font-semibold uppercase tracking-[0.15em] text-muted-foreground mb-1">Live Network Feed</span>
+      {networkEvents.slice(0, 6).map((evt) => (
+        <div key={evt.id} className="feed-item-enter flex items-center justify-between gap-2 px-2.5 py-1.5 rounded border border-border bg-card text-left w-full">
+          <div className="flex items-center gap-2 min-w-0">
+            <Globe className="h-3 w-3 text-primary shrink-0" />
+            <span className="text-[10px] text-foreground truncate">{evt.type} — <span className="text-muted-foreground">{evt.network}</span></span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-[9px] font-mono text-emerald-600">${evt.savings}</span>
+            <span className="text-[9px] text-muted-foreground">{evt.planImpact}</span>
+            <span className="text-[9px] text-muted-foreground">{evt.memberImpact}</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ─── ROI Feed ─── */
+
+function ROIFeed() {
+  const { roiEvents } = useSimulation();
+
+  return (
+    <div className="flex flex-col gap-1 overflow-hidden max-h-[200px]">
+      <span className="text-[9px] font-semibold uppercase tracking-[0.15em] text-muted-foreground mb-1">Live Financial Feed</span>
+      {roiEvents.slice(0, 6).map((evt) => (
+        <div key={evt.id} className="feed-item-enter flex items-center justify-between gap-2 px-2.5 py-1.5 rounded border border-border bg-card text-left w-full">
+          <div className="flex items-center gap-2 min-w-0">
+            <TrendingUp className="h-3 w-3 text-primary shrink-0" />
+            <span className="text-[10px] text-foreground truncate">{evt.type}</span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-[9px] font-mono text-emerald-600">${evt.value.toLocaleString()}</span>
+            <span className="text-[9px] text-muted-foreground">{evt.detail}</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ─── Shared Pipeline ─── */
+
+function Pipeline({ stages, pipeline }: { stages: string[]; pipeline: { activeStage: number; confidence: number; resolutionTime: number; outcome: string } }) {
+  return (
     <div className="flex flex-col gap-2">
-      <span className="text-[9px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
-        AI Orchestration Flow
-      </span>
+      <span className="text-[9px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">AI Orchestration Flow</span>
       <div className="flow-bg rounded-lg p-3 border border-border relative">
         <div className="flex items-center gap-1 overflow-x-auto">
-          {PIPELINE_STAGES.map((stage, i) => (
+          {stages.map((stage, i) => (
             <div key={stage} className="flex items-center gap-1 shrink-0">
               <div className={`px-2 py-1 rounded text-[9px] font-medium transition-all duration-300 ${
-                i <= pipeline.activeStage
-                  ? "reflect-gradient text-white"
-                  : "bg-secondary text-muted-foreground"
-              }`}>
-                {stage}
-              </div>
-              {i < PIPELINE_STAGES.length - 1 && (
-                <ArrowRight className={`h-2.5 w-2.5 shrink-0 transition-colors ${
-                  i < pipeline.activeStage ? "text-primary" : "text-muted-foreground/30"
-                }`} />
+                i <= pipeline.activeStage ? "reflect-gradient text-white" : "bg-secondary text-muted-foreground"
+              }`}>{stage}</div>
+              {i < stages.length - 1 && (
+                <ArrowRight className={`h-2.5 w-2.5 shrink-0 transition-colors ${i < pipeline.activeStage ? "text-primary" : "text-muted-foreground/30"}`} />
               )}
             </div>
           ))}
         </div>
         <div className="flex items-center gap-4 mt-2 text-[10px]">
-          <span className="text-muted-foreground">
-            Confidence: <span className="font-mono text-foreground font-semibold">{pipeline.confidence}%</span>
-          </span>
-          <span className="text-muted-foreground">
-            Resolution: <span className="font-mono text-foreground font-semibold">{pipeline.resolutionTime}s</span>
-          </span>
-          <span className="text-muted-foreground">
-            Outcome: <span className={`font-semibold ${pipeline.outcome === "Deflected" ? "text-primary" : "text-amber-600"}`}>
-              {pipeline.outcome}
-            </span>
-          </span>
+          <span className="text-muted-foreground">Confidence: <span className="font-mono text-foreground font-semibold">{pipeline.confidence}%</span></span>
+          <span className="text-muted-foreground">Processing: <span className="font-mono text-foreground font-semibold">{pipeline.resolutionTime}s</span></span>
+          <span className="text-muted-foreground">Outcome: <span className={`font-semibold ${pipeline.outcome === "Escalated" || pipeline.outcome === "Exception" ? "text-amber-600" : "text-primary"}`}>{pipeline.outcome}</span></span>
         </div>
       </div>
     </div>
   );
 }
 
-function LiveImpactCounters() {
-  const { counters } = useSimulation();
+/* ─── Tab-Specific Metrics ─── */
 
+function ContactMetrics() {
+  const { counters } = useSimulation();
   const items = [
     { label: "Calls Deflected", value: counters.callsDeflected, formatter: (n: number) => Math.round(n).toString(), icon: <Zap className="h-3 w-3" /> },
     { label: "Minutes Saved", value: counters.manualMinutesSaved, formatter: (n: number) => fmtDecimal(n, 0), icon: <Phone className="h-3 w-3" /> },
     { label: "Cost Avoided", value: counters.costAvoided, formatter: fmtCurrency, icon: <DollarSign className="h-3 w-3" /> },
     { label: "FTE Impact", value: counters.fteEquivalent, formatter: (n: number) => fmtDecimal(n, 2), icon: <Users className="h-3 w-3" /> },
   ];
+  return <MetricsGrid items={items} />;
+}
 
+function ClaimsMetrics() {
+  const { claimsCounters } = useSimulation();
+  const items = [
+    { label: "Auto-Adjudicated", value: claimsCounters.autoAdjudicated, formatter: (n: number) => Math.round(n).toString(), icon: <CheckCircle className="h-3 w-3" /> },
+    { label: "Reviews Avoided", value: claimsCounters.manualReviewsAvoided, formatter: (n: number) => Math.round(n).toString(), icon: <ShieldCheck className="h-3 w-3" /> },
+    { label: "Cost Avoided", value: claimsCounters.costAvoided, formatter: fmtCurrency, icon: <DollarSign className="h-3 w-3" /> },
+    { label: "Cycle Time ↓", value: claimsCounters.cycleTimeReductionPct, formatter: (n: number) => `${fmtDecimal(n, 0)}%`, icon: <Zap className="h-3 w-3" /> },
+    { label: "Error Rate ↓", value: claimsCounters.errorRateReductionPct, formatter: (n: number) => `${fmtDecimal(n, 0)}%`, icon: <AlertTriangle className="h-3 w-3" /> },
+    { label: "FTE Impact", value: claimsCounters.fteImpact, formatter: (n: number) => fmtDecimal(n, 2), icon: <Users className="h-3 w-3" /> },
+  ];
+  return <MetricsGrid items={items} />;
+}
+
+function NetworkMetrics() {
+  const { networkCounters } = useSimulation();
+  const items = [
+    { label: "Savings Generated", value: networkCounters.savingsGenerated, formatter: fmtCurrency, icon: <DollarSign className="h-3 w-3" /> },
+    { label: "OON Avoidance", value: networkCounters.oonAvoidanceRate, formatter: (n: number) => `${fmtDecimal(n, 0)}%`, icon: <ShieldCheck className="h-3 w-3" /> },
+    { label: "Marketplace ↑", value: networkCounters.marketplaceUtilLift, formatter: (n: number) => `${fmtDecimal(n, 0)}%`, icon: <TrendingUp className="h-3 w-3" /> },
+    { label: "PMPM ↓", value: networkCounters.pmpmReduction, formatter: (n: number) => `$${fmtDecimal(n, 2)}`, icon: <DollarSign className="h-3 w-3" /> },
+    { label: "Member Disruption ↓", value: networkCounters.memberDisruptionReductionPct, formatter: (n: number) => `${fmtDecimal(n, 0)}%`, icon: <Users className="h-3 w-3" /> },
+  ];
+  return <MetricsGrid items={items} />;
+}
+
+function ROIMetrics() {
+  const { roiCounters } = useSimulation();
+  const items = [
+    { label: "Annualized Savings", value: roiCounters.totalAnnualizedSavings, formatter: fmtCurrency, icon: <DollarSign className="h-3 w-3" /> },
+    { label: "ROI Multiple", value: roiCounters.roiMultiple, formatter: (n: number) => `${fmtDecimal(n, 1)}×`, icon: <TrendingUp className="h-3 w-3" /> },
+    { label: "Payback Months", value: roiCounters.paybackMonths, formatter: (n: number) => fmtDecimal(n, 1), icon: <Zap className="h-3 w-3" /> },
+    { label: "Productivity ↑", value: roiCounters.productivityLiftPct, formatter: (n: number) => `${fmtDecimal(n, 0)}%`, icon: <Users className="h-3 w-3" /> },
+    { label: "Margin Expansion", value: roiCounters.marginExpansionPct, formatter: (n: number) => `${fmtDecimal(n, 2)}%`, icon: <TrendingUp className="h-3 w-3" /> },
+  ];
+  return <MetricsGrid items={items} />;
+}
+
+function MetricsGrid({ items }: { items: { label: string; value: number; formatter: (n: number) => string; icon: React.ReactNode }[] }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <span className="text-[9px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
-        Live Impact (Today)
-      </span>
-      <div className="grid grid-cols-2 gap-2">
+      <span className="text-[9px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">Live Impact (Today)</span>
+      <div className={`grid ${items.length > 4 ? "grid-cols-3" : "grid-cols-2"} gap-2`}>
         {items.map((item) => (
           <div key={item.label} className="metric-card flex flex-col gap-1 p-2.5 reflect-border">
             <div className="flex items-center gap-1.5">
               <span className="text-primary">{item.icon}</span>
               <span className="text-[9px] text-muted-foreground">{item.label}</span>
             </div>
-            <CountUpValue
-              value={item.value}
-              formatter={item.formatter}
-              className="text-sm font-bold font-mono text-foreground"
-            />
+            <CountUpValue value={item.value} formatter={item.formatter} className="text-sm font-bold font-mono text-foreground" />
           </div>
         ))}
       </div>
@@ -131,17 +253,48 @@ function LiveImpactCounters() {
   );
 }
 
+/* ─── Main Component ─── */
+
 export function LiveOrchestration() {
+  const { activeTab } = useDashboard();
+  const sim = useSimulation();
+  const config = TAB_CONFIG[activeTab];
+
+  const feedMap: Record<DashboardTab, React.ReactNode> = {
+    contact: <ContactFeed />,
+    claims: <ClaimsFeed />,
+    network: <NetworkFeed />,
+    roi: <ROIFeed />,
+  };
+
+  const pipelineMap: Record<DashboardTab, { activeStage: number; confidence: number; resolutionTime: number; outcome: string }> = {
+    contact: sim.pipeline,
+    claims: sim.claimsPipeline,
+    network: sim.networkPipeline,
+    roi: sim.roiPipeline,
+  };
+
+  const metricsMap: Record<DashboardTab, React.ReactNode> = {
+    contact: <ContactMetrics />,
+    claims: <ClaimsMetrics />,
+    network: <NetworkMetrics />,
+    roi: <ROIMetrics />,
+  };
+
   return (
     <div className="module-panel p-4 space-y-3">
       <div className="flex items-center gap-2 mb-1">
         <div className="status-dot" />
-        <span className="text-xs font-semibold text-foreground">Live Operational Stream</span>
+        <span className="text-primary">{config.icon}</span>
+        <div>
+          <span className="text-xs font-semibold text-foreground">{config.title}</span>
+          <span className="ml-2 text-[10px] text-muted-foreground">{config.subtitle}</span>
+        </div>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <EventFeed />
-        <AIPipeline />
-        <LiveImpactCounters />
+        {feedMap[activeTab]}
+        <Pipeline stages={config.pipelineStages} pipeline={pipelineMap[activeTab]} />
+        {metricsMap[activeTab]}
       </div>
     </div>
   );
