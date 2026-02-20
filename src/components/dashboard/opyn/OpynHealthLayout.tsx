@@ -339,6 +339,13 @@ export function OpynHealthLayout() {
             <Monitor className="h-2.5 w-2.5" />
             White-Label
           </button>
+          <button
+            onClick={() => setDeploymentMode("embedded")}
+            className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Phone className="h-2.5 w-2.5" />
+            Five9 Voice
+          </button>
 
           <img src={penguinLogo} alt="Penguin AI" className="h-4 opacity-40" />
         </div>
