@@ -70,7 +70,7 @@ export function InteractionDetailModal({ event, onClose }: Props) {
             <div className="text-lg font-bold font-mono text-foreground">{event.resolutionTimeSec.toFixed(1)}s</div>
           </div>
           <div className="p-3 rounded-lg bg-secondary/30 border border-border">
-            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground"><Shield className="h-3 w-3" /> Cost Avoided</div>
+            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground"><Shield className="h-3 w-3" /> Cost Impact</div>
             <div className="text-lg font-bold font-mono text-primary">{fmtCurrency(costAvoided)}</div>
           </div>
           <div className="p-3 rounded-lg bg-secondary/30 border border-border">

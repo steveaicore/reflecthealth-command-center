@@ -57,8 +57,8 @@ const METRIC_DATA: Record<string, { title: string; preAI: number; postAI: number
       { period: "Week 3", value: 11 }, { period: "Week 4", value: 8 },
     ],
   },
-  "FTE Impact": {
-    title: "FTE Reduction",
+  "Workforce Impact": {
+    title: "Workforce Reduction",
     preAI: 0,
     postAI: 4.2,
     unit: " FTE",

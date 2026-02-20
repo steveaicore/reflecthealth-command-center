@@ -15,25 +15,25 @@ const TAB_CONFIG: Record<DashboardTab, {
   pipelineStages: string[];
 }> = {
   contact: {
-    title: "Live Operational Stream",
+    title: "Live Orchestration Stream",
     subtitle: "Member & Provider Interaction Automation",
     icon: <Phone className="h-3.5 w-3.5" />,
     pipelineStages: ["Incoming", "Intent Classification", "Policy Validation", "System Query", "Response Generation", "Resolved"],
   },
   claims: {
-    title: "Live Claims Processing Stream",
+    title: "Live Claims Orchestration Stream",
     subtitle: "Adjudication & Review Intelligence",
     icon: <FileText className="h-3.5 w-3.5" />,
     pipelineStages: ["Claim Intake", "Code Extraction", "Policy Mapping", "Fraud Check", "Adjudication", "Payment Decision"],
   },
   network: {
-    title: "Live Network Optimization Activity",
+    title: "Live Network Intelligence Stream",
     subtitle: "Contract & Ecosystem Optimization",
     icon: <Globe className="h-3.5 w-3.5" />,
     pipelineStages: ["Request", "Network Match", "Contract Optimization", "Coverage Validation", "Cost Calculation", "Outcome"],
   },
   roi: {
-    title: "Live Financial Performance Engine",
+    title: "Financial Orchestration Engine",
     subtitle: "Financial Performance Orchestration",
     icon: <TrendingUp className="h-3.5 w-3.5" />,
     pipelineStages: ["Operational Event", "Financial Attribution", "Margin Impact", "ROI Calculation", "Forecast Update"],
@@ -189,10 +189,10 @@ function Pipeline({ stages, pipeline }: { stages: string[]; pipeline: { activeSt
 function ContactMetrics() {
   const { counters } = useSimulation();
   const items = [
-    { label: "Calls Deflected", value: counters.callsDeflected, formatter: (n: number) => Math.round(n).toString(), icon: <Zap className="h-3 w-3" /> },
+    { label: "Calls Orchestrated", value: counters.callsDeflected, formatter: (n: number) => Math.round(n).toString(), icon: <Zap className="h-3 w-3" /> },
     { label: "Minutes Saved", value: counters.manualMinutesSaved, formatter: (n: number) => fmtDecimal(n, 0), icon: <Phone className="h-3 w-3" /> },
-    { label: "Cost Avoided", value: counters.costAvoided, formatter: fmtCurrency, icon: <DollarSign className="h-3 w-3" /> },
-    { label: "FTE Impact", value: counters.fteEquivalent, formatter: (n: number) => fmtDecimal(n, 2), icon: <Users className="h-3 w-3" /> },
+    { label: "Cost Impact", value: counters.costAvoided, formatter: fmtCurrency, icon: <DollarSign className="h-3 w-3" /> },
+    { label: "Workforce Impact", value: counters.fteEquivalent, formatter: (n: number) => fmtDecimal(n, 2), icon: <Users className="h-3 w-3" /> },
   ];
   return <MetricsGrid items={items} />;
 }
@@ -202,10 +202,10 @@ function ClaimsMetrics() {
   const items = [
     { label: "Auto-Adjudicated", value: claimsCounters.autoAdjudicated, formatter: (n: number) => Math.round(n).toString(), icon: <CheckCircle className="h-3 w-3" /> },
     { label: "Reviews Avoided", value: claimsCounters.manualReviewsAvoided, formatter: (n: number) => Math.round(n).toString(), icon: <ShieldCheck className="h-3 w-3" /> },
-    { label: "Cost Avoided", value: claimsCounters.costAvoided, formatter: fmtCurrency, icon: <DollarSign className="h-3 w-3" /> },
+    { label: "Cost Impact", value: claimsCounters.costAvoided, formatter: fmtCurrency, icon: <DollarSign className="h-3 w-3" /> },
     { label: "Cycle Time ↓", value: claimsCounters.cycleTimeReductionPct, formatter: (n: number) => `${fmtDecimal(n, 0)}%`, icon: <Zap className="h-3 w-3" /> },
     { label: "Error Rate ↓", value: claimsCounters.errorRateReductionPct, formatter: (n: number) => `${fmtDecimal(n, 0)}%`, icon: <AlertTriangle className="h-3 w-3" /> },
-    { label: "FTE Impact", value: claimsCounters.fteImpact, formatter: (n: number) => fmtDecimal(n, 2), icon: <Users className="h-3 w-3" /> },
+    { label: "Workforce Impact", value: claimsCounters.fteImpact, formatter: (n: number) => fmtDecimal(n, 2), icon: <Users className="h-3 w-3" /> },
   ];
   return <MetricsGrid items={items} />;
 }

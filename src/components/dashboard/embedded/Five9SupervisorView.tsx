@@ -23,7 +23,7 @@ export function Five9SupervisorView() {
     { label: "Avg Handle Time", value: callParams.handleTimeMin * (1 - callParams.aiProcessSavingsPct), suffix: " min", icon: Clock, color: "text-five9-accent" },
     { label: "Escalation Alerts", value: escalations.length, icon: AlertTriangle, color: "text-amber-600" },
     { label: "SLA Improvement", value: 23, suffix: "%", icon: TrendingUp, color: "text-emerald-600" },
-    { label: "FTE Impact", value: counters.fteEquivalent, icon: Users, color: "text-five9-accent" },
+    { label: "Workforce Impact", value: counters.fteEquivalent, icon: Users, color: "text-five9-accent" },
   ];
 
   return (
