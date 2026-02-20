@@ -93,7 +93,7 @@ interface SimulationState {
 
 const SimulationContext = createContext<SimulationState | null>(null);
 
-// Weighted caller type: 75% Provider, 25% Member
+// Weighted caller type: 75% Provider, 25% Member (no Broker)
 function weightedCallerType(): CallerType {
   const r = Math.random();
   if (r < 0.75) return "Provider";
