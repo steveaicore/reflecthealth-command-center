@@ -151,7 +151,7 @@ export function LiveCallSimulation() {
   const { pipeline } = useSimulation();
   const { results } = useDashboard();
   const {
-    audioEnabled, isLiveSimulation, setIsLiveSimulation,
+    audioEnabled, setAudioEnabled, isLiveSimulation, setIsLiveSimulation,
     confidenceThreshold, playTTS, stopAudio, setCurrentCallOutcome,
     isPlaying, setLiveCallIntent,
   } = useAudioEngine();
@@ -284,21 +284,34 @@ export function LiveCallSimulation() {
             </div>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           {callCount > 0 && (
             <span className="text-[9px] font-mono text-five9-muted">#{callCount}</span>
           )}
-          <button
-            onClick={handleToggle}
-            className={`flex items-center gap-1 px-2 py-1 text-[9px] font-semibold rounded transition-all ${
-              isLiveSimulation
-                ? "five9-accent-bg text-white"
-                : "bg-secondary text-five9-muted hover:text-foreground"
-            }`}
-          >
-            {isLiveSimulation ? <Mic className="h-2.5 w-2.5" /> : <MicOff className="h-2.5 w-2.5" />}
-            {isLiveSimulation ? "LIVE" : "OFF"}
-          </button>
+          <div className="flex items-center bg-secondary rounded-md p-0.5 gap-0.5">
+            <button
+              onClick={handleToggle}
+              className={`flex items-center gap-1 px-2 py-1 text-[9px] font-semibold rounded transition-all ${
+                isLiveSimulation
+                  ? "five9-accent-bg text-white"
+                  : "text-five9-muted hover:text-foreground"
+              }`}
+            >
+              {isLiveSimulation ? <Mic className="h-2.5 w-2.5" /> : <MicOff className="h-2.5 w-2.5" />}
+              {isLiveSimulation ? "LIVE" : "OFF"}
+            </button>
+            <button
+              onClick={() => setAudioEnabled(!audioEnabled)}
+              className={`flex items-center gap-1 px-2 py-1 text-[9px] font-semibold rounded transition-all ${
+                audioEnabled
+                  ? "bg-emerald-500/30 text-emerald-300"
+                  : "text-five9-muted hover:text-foreground"
+              }`}
+            >
+              {audioEnabled ? "🔊" : "🔇"}
+              {audioEnabled ? "Audio" : "Muted"}
+            </button>
+          </div>
         </div>
       </div>
 
