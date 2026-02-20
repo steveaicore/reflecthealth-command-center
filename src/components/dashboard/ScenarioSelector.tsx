@@ -10,10 +10,9 @@ interface Scenario {
 }
 
 const SCENARIOS: Scenario[] = [
-  { label: "Large Regional TPA", preset: "high", description: "50K calls, 50K claims/mo" },
-  { label: "Rapid Growth Phase", preset: "medium", description: "29K calls, 30K claims/mo" },
-  { label: "Cost-Constrained Client", preset: "low", description: "10K calls, 15K claims/mo" },
-  { label: "High Call Volume Plan", preset: "high", description: "Heavy contact center load" },
+  { label: "Large Regional TPA", preset: "high", description: "40.6K calls, 42K claims/mo" },
+  { label: "Reflect Baseline", preset: "medium", description: "29K calls, 30K claims/mo" },
+  { label: "Cost-Constrained Client", preset: "low", description: "20.3K calls, 21K claims/mo" },
 ];
 
 export function ScenarioSelector() {

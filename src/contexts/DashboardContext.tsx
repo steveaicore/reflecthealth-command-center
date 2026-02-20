@@ -41,24 +41,24 @@ const DashboardContext = createContext<DashboardState | null>(null);
 
 const DEFAULT_CALL: CallCenterParams = {
   monthlyCalls: 29000,
-  handleTimeMin: 8,
-  agentCostHr: 22,
-  providerPct: 0.4,
-  eligiblePct: 0.7,
-  accuracyPct: 0.92,
-  aiProcessSavingsPct: 0.65,
+  handleTimeMin: 6,
+  agentCostHr: 23,
+  providerPct: 0.75,
+  eligiblePct: 0.705,
+  accuracyPct: 0.85,
+  aiProcessSavingsPct: 1.0,
 };
 
 const DEFAULT_CLAIMS: ClaimsParams = {
   monthlyClaims: 30000,
-  manualReviewPct: 0.35,
-  manualTimeMin: 12,
-  fteHourlyCost: 28,
-  aiLaborReductionPct: 0.55,
+  manualReviewPct: 0.25,
+  manualTimeMin: 15,
+  fteHourlyCost: 50,
+  aiLaborReductionPct: 0.50,
 };
 
 const DEFAULT_PLATFORM: PlatformParams = {
-  annualPlatformCost: 180000,
+  annualPlatformCost: 350000,
 };
 
 export function DashboardProvider({ children }: { children: React.ReactNode }) {
@@ -85,6 +85,11 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     const v = VOLUME_PRESETS[p];
     setCallParams((prev) => ({ ...prev, monthlyCalls: v.calls }));
     setClaimsParams((prev) => ({ ...prev, monthlyClaims: v.claims }));
+    if (v.platformCost) {
+      setPlatformParams({ annualPlatformCost: v.platformCost });
+    } else {
+      setPlatformParams({ annualPlatformCost: 350000 });
+    }
     triggerSync();
   }, [triggerSync]);
 
