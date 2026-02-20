@@ -245,30 +245,32 @@ function VoiceReplayPanel({ analysis, audioFile }: { analysis: CallAnalysis; aud
 
     if (words.length > 0) {
       const { segs, agentSpeaker } = buildSegments(words);
-      // Extract caller turns (text only) to send to AI for aligned responses
+      // Extract caller turns in order
       const callerSegs = segs.filter(s => s.speaker !== agentSpeaker);
       const callerTexts = callerSegs.map(s => s.text);
 
-      // Fetch aligned AI responses for each caller turn
+      // Fetch aligned AI responses: one per caller turn PLUS an opening greeting
       setLoadingDialogue(true);
       const aiResponses = await fetchAlignedDialogue(callerTexts, analysis);
       setLoadingDialogue(false);
 
       if (abortRef.current) { setPlaying(false); return; }
 
-      // Interleave: caller turn → AI response, alternating
-      let aiIdx = 0;
-      let callerIdx = 0;
-      for (const seg of segs) {
-        if (seg.speaker === agentSpeaker) {
-          // Replace agent with Penguin AI using aligned response
-          const text = aiResponses[aiIdx] ?? analysis.ai_response_script;
-          aiIdx = Math.min(aiIdx + 1, aiResponses.length - 1);
-          baseConversation.push({ role: "ai", text, startTime: seg.startTime, endTime: seg.endTime });
-        } else {
-          // Real caller audio
-          baseConversation.push({ role: "caller", text: callerSegs[callerIdx]?.text ?? seg.text, startTime: seg.startTime, endTime: seg.endTime });
-          callerIdx++;
+      // NEW ORDER: Penguin AI greeting → caller turn 1 → AI response 1 → caller turn 2 → AI response 2 …
+      // The first element of aiResponses is the opening greeting (before any caller turn)
+      const openingGreeting = aiResponses[0] ?? "Thank you for calling. How can I assist you today?";
+      const turnResponses = aiResponses.slice(1); // responses that follow each caller utterance
+
+      // Opening AI greeting
+      baseConversation.push({ role: "ai", text: openingGreeting, startTime: 0, endTime: 0 });
+
+      // Then interleave: caller speaks → AI responds
+      for (let i = 0; i < callerSegs.length; i++) {
+        const callerSeg = callerSegs[i];
+        baseConversation.push({ role: "caller", text: callerSeg.text, startTime: callerSeg.startTime, endTime: callerSeg.endTime });
+        const aiText = turnResponses[i];
+        if (aiText) {
+          baseConversation.push({ role: "ai", text: aiText, startTime: 0, endTime: 0 });
         }
       }
     } else {
@@ -285,10 +287,13 @@ function VoiceReplayPanel({ analysis, audioFile }: { analysis: CallAnalysis; aud
 
       if (abortRef.current) { setPlaying(false); return; }
 
-      const maxT = Math.max(callerLines.length, aiResponses.length);
-      for (let i = 0; i < maxT; i++) {
-        if (callerLines[i]) baseConversation.push({ role: "caller", text: callerLines[i], startTime: i * 9, endTime: i * 9 + 7 });
-        if (aiResponses[i]) baseConversation.push({ role: "ai", text: aiResponses[i], startTime: 0, endTime: 0 });
+      // Opening greeting from first AI response, then caller → AI pairs
+      const openingGreeting = aiResponses[0] ?? "Thank you for calling. How can I assist you today?";
+      const turnResponses = aiResponses.slice(1);
+      baseConversation.push({ role: "ai", text: openingGreeting, startTime: 0, endTime: 0 });
+      for (let i = 0; i < callerLines.length; i++) {
+        baseConversation.push({ role: "caller", text: callerLines[i], startTime: i * 9, endTime: i * 9 + 7 });
+        if (turnResponses[i]) baseConversation.push({ role: "ai", text: turnResponses[i], startTime: 0, endTime: 0 });
       }
     }
 
