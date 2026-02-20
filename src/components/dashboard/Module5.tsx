@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Upload, FileAudio, Loader2, CheckCircle2, AlertCircle, Brain, Shield,
-  TrendingUp, ChevronDown, ChevronUp, BarChart3, BookOpen, Cpu, Play,
+  TrendingUp, ChevronDown, ChevronUp, BarChart3, BookOpen, Cpu, Play, Pause, Square,
   RotateCcw, Database, Users, DollarSign,
 } from "lucide-react";
 import penguinLogo from "@/assets/penguin-ai-logo.png";
@@ -103,8 +103,15 @@ async function sliceAudio(buf: AudioBuffer, t0: number, t1: number): Promise<str
   } catch { return null; }
 }
 
-async function playUrl(url: string, vol = 0.85): Promise<void> {
-  return new Promise(res => { const a = new Audio(url); a.volume = vol; a.onended = () => res(); a.onerror = () => res(); a.play().catch(() => res()); });
+async function playUrl(url: string, vol = 0.85, audioRef?: React.MutableRefObject<HTMLAudioElement | null>, pauseRef?: React.MutableRefObject<boolean>): Promise<void> {
+  return new Promise(res => {
+    const a = new Audio(url);
+    a.volume = vol;
+    if (audioRef) audioRef.current = a;
+    a.onended = () => { if (audioRef) audioRef.current = null; res(); };
+    a.onerror = () => { if (audioRef) audioRef.current = null; res(); };
+    a.play().catch(() => res());
+  });
 }
 
 async function fetchTTS(text: string): Promise<string | null> {
@@ -124,10 +131,13 @@ type TurnDisplay = { role: "caller" | "ai"; text: string; state: "pending" | "pl
 function VoiceReplayPanel({ analysis, audioFile }: { analysis: CallAnalysis; audioFile: File | null }) {
   const [turns, setTurns] = useState<TurnDisplay[]>([]);
   const [playing, setPlaying] = useState(false);
+  const [paused, setPaused] = useState(false);
   const [completed, setCompleted] = useState(false);
   const [overlays, setOverlays] = useState<string[]>([]);
   const abortRef = useRef(false);
+  const pauseRef = useRef(false);
   const bufRef = useRef<AudioBuffer | null>(null);
+  const activeAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const OVERLAYS = ["✔ Intent Identified", "✔ Member ID Validated", "✔ Data Retrieved", "✔ Backend Systems Queried", "✔ Compliance Log Created", "✔ CRM Updated"];
   const TASKS = [{ e: "🧾", l: "Call summary generated" }, { e: "🗂", l: "Structured data packet created" }, { e: "📋", l: "CRM record updated" }, { e: "📤", l: "Claims system notified" }, { e: "✉️", l: "Follow-up email queued" }, { e: "📱", l: "SMS confirmation sent" }];
@@ -174,7 +184,8 @@ function VoiceReplayPanel({ analysis, audioFile }: { analysis: CallAnalysis; aud
 
   const runReplay = useCallback(async () => {
     abortRef.current = false;
-    setPlaying(true); setCompleted(false); setOverlays([]);
+    pauseRef.current = false;
+    setPlaying(true); setPaused(false); setCompleted(false); setOverlays([]);
 
     // Decode audio once
     if (!bufRef.current && audioFile) {
@@ -192,22 +203,27 @@ function VoiceReplayPanel({ analysis, audioFile }: { analysis: CallAnalysis; aud
     let oidx = 0;
     for (let i = 0; i < conversation.length; i++) {
       if (abortRef.current) break;
+
+      // Pause: wait until unpaused or aborted
+      while (pauseRef.current && !abortRef.current) {
+        await new Promise(r => setTimeout(r, 100));
+      }
+      if (abortRef.current) break;
+
       const turn = conversation[i];
       setTurns(prev => prev.map((t, idx) => idx === i ? { ...t, state: "playing" } : t));
 
       if (turn.role === "caller") {
-        // Play real caller audio slice from the uploaded file
         let played = false;
         if (bufRef.current && turn.endTime > turn.startTime) {
           const url = await sliceAudio(bufRef.current, turn.startTime, turn.endTime);
-          if (url) { await playUrl(url, 0.9); URL.revokeObjectURL(url); played = true; }
+          if (url) { await playUrl(url, 0.9, activeAudioRef); URL.revokeObjectURL(url); played = true; }
         }
         if (!played) await new Promise(r => setTimeout(r, Math.max(1200, turn.text.length * 42)));
       } else {
-        // Play Penguin AI TTS
         if (oidx < OVERLAYS.length) setOverlays(prev => [...prev, OVERLAYS[oidx++]]);
         const ttsUrl = await fetchTTS(turn.text);
-        if (ttsUrl) { await playUrl(ttsUrl, 0.8); URL.revokeObjectURL(ttsUrl); }
+        if (ttsUrl) { await playUrl(ttsUrl, 0.8, activeAudioRef); URL.revokeObjectURL(ttsUrl); }
         else await new Promise(r => setTimeout(r, Math.max(1000, turn.text.length * 38)));
       }
 
@@ -218,10 +234,28 @@ function VoiceReplayPanel({ analysis, audioFile }: { analysis: CallAnalysis; aud
 
     while (oidx < OVERLAYS.length && !abortRef.current) { setOverlays(prev => [...prev, OVERLAYS[oidx++]]); await new Promise(r => setTimeout(r, 300)); }
     if (!abortRef.current) setCompleted(true);
-    setPlaying(false);
+    setPlaying(false); setPaused(false);
   }, [audioFile, buildConversation]);
 
-  const reset = () => { abortRef.current = true; setPlaying(false); setCompleted(false); setTurns([]); setOverlays([]); };
+  const handlePause = () => {
+    if (activeAudioRef.current) activeAudioRef.current.pause();
+    pauseRef.current = true;
+    setPaused(true);
+  };
+
+  const handleResume = () => {
+    if (activeAudioRef.current) activeAudioRef.current.play().catch(() => {});
+    pauseRef.current = false;
+    setPaused(false);
+  };
+
+  const handleStop = () => {
+    abortRef.current = true;
+    pauseRef.current = false;
+    if (activeAudioRef.current) { activeAudioRef.current.pause(); activeAudioRef.current = null; }
+    setPlaying(false); setPaused(false); setCompleted(false);
+    setTurns([]); setOverlays([]);
+  };
 
   return (
     <div className="rounded-lg border border-border bg-card overflow-hidden">
@@ -231,7 +265,29 @@ function VoiceReplayPanel({ analysis, audioFile }: { analysis: CallAnalysis; aud
           <span className="text-xs font-semibold text-foreground">Penguin AI — Automated Scenario Replay</span>
           {audioFile && <span className="text-[9px] text-emerald-700 border border-emerald-200 bg-emerald-50 rounded px-1.5 py-0.5 font-medium">Real caller audio</span>}
         </div>
-        {(playing || completed) && <button onClick={reset} className="text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1"><RotateCcw className="h-3 w-3" /> Reset</button>}
+        {/* Playback controls */}
+        <div className="flex items-center gap-1.5">
+          {playing && !paused && (
+            <button onClick={handlePause} title="Pause" className="p-1.5 rounded bg-secondary hover:bg-secondary/80 text-foreground transition-colors">
+              <Pause className="h-3 w-3" />
+            </button>
+          )}
+          {playing && paused && (
+            <button onClick={handleResume} title="Resume" className="p-1.5 rounded bg-primary/10 hover:bg-primary/20 text-primary transition-colors">
+              <Play className="h-3 w-3" />
+            </button>
+          )}
+          {(playing || completed) && (
+            <button onClick={handleStop} title="Stop" className="p-1.5 rounded bg-secondary hover:bg-destructive/10 hover:text-destructive text-muted-foreground transition-colors">
+              <Square className="h-3 w-3" />
+            </button>
+          )}
+          {completed && (
+            <button onClick={() => { handleStop(); setTimeout(runReplay, 50); }} title="Replay" className="p-1.5 rounded bg-secondary hover:bg-secondary/80 text-muted-foreground hover:text-foreground transition-colors">
+              <RotateCcw className="h-3 w-3" />
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="p-4 space-y-3">
@@ -247,6 +303,13 @@ function VoiceReplayPanel({ analysis, audioFile }: { analysis: CallAnalysis; aud
               {audioFile ? "Play: Real Caller Voice + Penguin AI Response" : "Play: Simulated Scenario Replay"}
             </button>
           </>
+        )}
+
+        {/* Paused indicator */}
+        {paused && (
+          <div className="flex items-center justify-center gap-2 py-1 text-[10px] text-muted-foreground">
+            <Pause className="h-3 w-3" /> Paused — click play to resume
+          </div>
         )}
 
         {/* Interleaved conversation */}
@@ -265,7 +328,7 @@ function VoiceReplayPanel({ analysis, audioFile }: { analysis: CallAnalysis; aud
                     <span className={`text-[9px] font-semibold uppercase tracking-wide ${turn.role === "ai" ? "text-primary" : "text-muted-foreground"}`}>
                       {turn.role === "ai" ? "Penguin AI" : "Caller"}
                     </span>
-                    {turn.state === "playing" && (
+                    {turn.state === "playing" && !paused && (
                       <span className="flex gap-0.5 ml-1">
                         {[0, 1, 2, 3].map(j => <span key={j} className={`inline-block w-0.5 rounded-full ${turn.role === "ai" ? "bg-primary" : "bg-amber-500"} animate-pulse`} style={{ height: `${6 + (j % 3) * 3}px`, animationDelay: `${j * 0.1}s` }} />)}
                       </span>
