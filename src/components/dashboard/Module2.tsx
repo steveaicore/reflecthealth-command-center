@@ -12,7 +12,7 @@ export function Module2() {
   const { claims } = results;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <ClaimsFeed />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">

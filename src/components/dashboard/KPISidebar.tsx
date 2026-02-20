@@ -85,29 +85,39 @@ export function KPISidebar() {
   }
 
   return (
-    <aside className="w-[220px] border-l border-border bg-card p-3 flex flex-col gap-2 overflow-y-auto shrink-0 hidden xl:flex">
+    <aside className="w-[220px] border-l border-border p-3 flex flex-col gap-2 overflow-y-auto shrink-0 hidden xl:flex" style={{ background: "hsl(230 16% 97%)" }}>
       <span className="text-[9px] font-semibold uppercase tracking-[0.15em] reflect-gradient-text mb-1">
         Live Command Metrics
       </span>
 
-      {kpis.map((kpi) => (
-        <div
-          key={kpi.label}
-          className={`flex items-start gap-1.5 py-1.5 border-b border-border/50 last:border-0 ${
-            kpi.highlight ? "reflect-border" : ""
-          }`}
-        >
-          <span className="text-primary mt-0.5">{kpi.icon}</span>
-          <div className="flex flex-col min-w-0">
-            <span className="text-[9px] text-muted-foreground leading-tight truncate">{kpi.label}</span>
-            <CountUpValue
-              value={kpi.value}
-              formatter={kpi.formatter}
-              className="text-xs font-semibold font-mono text-foreground"
-            />
+      {kpis.map((kpi) => {
+        const isUp = kpi.label.includes("Savings") || kpi.label === "ROI";
+        const isDown = kpi.label.includes("FTE") || kpi.label === "Payback";
+        const arrowColor = isUp ? "text-semantic-coverage" : isDown ? "text-semantic-identity" : "";
+        const arrow = isUp ? "↑" : isDown ? "↓" : "";
+
+        return (
+          <div
+            key={kpi.label}
+            className={`flex items-start gap-1.5 py-2 border-b border-border/50 last:border-0 ${
+              kpi.highlight ? "reflect-border" : ""
+            }`}
+          >
+            <span className="text-primary mt-0.5">{kpi.icon}</span>
+            <div className="flex flex-col min-w-0 flex-1">
+              <span className="text-[9px] text-muted-foreground leading-tight truncate">{kpi.label}</span>
+              <div className="flex items-center gap-1">
+                <CountUpValue
+                  value={kpi.value}
+                  formatter={kpi.formatter}
+                  className="text-[13px] font-bold font-mono text-foreground"
+                />
+                {arrow && <span className={`text-[10px] font-semibold ${arrowColor}`}>{arrow}</span>}
+              </div>
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
 
       <button
         onClick={() => setExportOpen(true)}

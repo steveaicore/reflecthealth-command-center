@@ -6,7 +6,7 @@
 
 @layer base {
   :root {
-    --background: 220 20% 97%;
+    --background: 235 20% 98%;
     --foreground: 220 20% 14%;
 
     --card: 0 0% 100%;
@@ -30,8 +30,8 @@
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
+    --border: 240 10% 93%;
+    --input: 240 10% 93%;
     --ring: 335 100% 60%;
 
     --radius: 0.75rem;
@@ -49,8 +49,22 @@
     --metric-positive: 335 100% 60%;
     --metric-negative: 0 72% 51%;
     --metric-neutral: 45 90% 50%;
-    --surface-elevated: 220 14% 97%;
+    --surface-elevated: 230 16% 96%;
     --glow-primary: 335 100% 60%;
+
+    /* Section container */
+    --section-bg: 230 20% 96%;
+
+    /* Semantic micro-colors */
+    --semantic-identity: 253 70% 70%;
+    --semantic-coverage: 152 40% 50%;
+    --semantic-claims: 216 90% 63%;
+    --semantic-financial: 335 100% 60%;
+
+    /* Tinted metric backgrounds */
+    --tint-savings: 335 60% 97%;
+    --tint-fte: 265 40% 97%;
+    --tint-calls: 25 60% 97%;
 
     /* Reflect gradient */
     --reflect-pink: 335 100% 60%;
@@ -96,8 +110,10 @@
 
 @layer components {
   .metric-card {
-    @apply bg-card rounded-lg p-4 border border-border;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+    @apply bg-card p-4 border;
+    border-radius: 16px;
+    border-color: hsl(240 10% 93%);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
   }
 
   .metric-value {
@@ -119,8 +135,78 @@
   }
 
   .module-panel {
-    @apply bg-card rounded-lg border border-border overflow-hidden;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+    @apply bg-card border overflow-hidden;
+    border-radius: 16px;
+    border-color: hsl(240 10% 93%);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+  }
+
+  /* Section container grouping */
+  .section-container {
+    background: hsl(var(--section-bg));
+    border-radius: 20px;
+    padding: 24px;
+  }
+
+  /* Semantic left border accents */
+  .semantic-border-identity { border-left: 4px solid hsl(var(--semantic-identity)); }
+  .semantic-border-coverage { border-left: 4px solid hsl(var(--semantic-coverage)); }
+  .semantic-border-claims { border-left: 4px solid hsl(var(--semantic-claims)); }
+  .semantic-border-financial { border-left: 4px solid hsl(var(--semantic-financial)); }
+
+  /* Tinted metric backgrounds */
+  .tint-savings { background: hsl(var(--tint-savings)); }
+  .tint-fte { background: hsl(var(--tint-fte)); }
+  .tint-calls { background: hsl(var(--tint-calls)); }
+
+  /* Section header accent bar */
+  .section-header-accent {
+    @apply flex items-center gap-2;
+  }
+  .section-header-accent::before {
+    content: '';
+    display: block;
+    width: 4px;
+    height: 20px;
+    border-radius: 2px;
+    background: linear-gradient(180deg, hsl(335 100% 60%), hsl(20 90% 55%));
+    flex-shrink: 0;
+  }
+
+  /* Status badge pulse */
+  @keyframes status-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+  .status-badge-pulse {
+    animation: status-pulse 2s ease-in-out infinite;
+  }
+
+  /* Live impact background animation */
+  @keyframes live-impact-drift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  .live-impact-bg {
+    position: relative;
+  }
+  .live-impact-bg::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(90deg,
+      transparent 0%,
+      hsl(335 100% 60% / 0.04) 20%,
+      hsl(20 90% 55% / 0.03) 40%,
+      hsl(335 100% 60% / 0.05) 60%,
+      hsl(20 90% 55% / 0.03) 80%,
+      transparent 100%);
+    background-size: 200% 100%;
+    animation: live-impact-drift 10s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 0;
   }
 
   .module-header {

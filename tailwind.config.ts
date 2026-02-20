@@ -61,6 +61,10 @@ export default {
         "metric-negative": "hsl(var(--metric-negative))",
         "metric-neutral": "hsl(var(--metric-neutral))",
         "surface-elevated": "hsl(var(--surface-elevated))",
+        "semantic-identity": "hsl(var(--semantic-identity))",
+        "semantic-coverage": "hsl(var(--semantic-coverage))",
+        "semantic-claims": "hsl(var(--semantic-claims))",
+        "semantic-financial": "hsl(var(--semantic-financial))",
       },
       borderRadius: {
         lg: "var(--radius)",
