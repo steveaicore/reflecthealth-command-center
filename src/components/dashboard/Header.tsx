@@ -94,7 +94,7 @@ export function Header() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setPlaybackOpen(true)}
-            className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium rounded bg-secondary text-muted-foreground hover:text-foreground transition-all"
+            className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium rounded bg-gradient-to-r from-[hsl(340,80%,55%)] to-[hsl(25,95%,55%)] text-white hover:opacity-90 transition-all"
           >
             <Play className="h-3 w-3" />
             Launch AI Call Deflection
