@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useSimulation } from "@/contexts/SimulationContext";
 import { useDashboard } from "@/contexts/DashboardContext";
 import { DetailModal } from "../DetailModal";
-import { Bot, User, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { User, AlertTriangle, CheckCircle2 } from "lucide-react";
+import penguinLogo from "@/assets/penguin-logo.png";
 
 const TRANSCRIPT_LINES = [
   { speaker: "member", text: "Hi, I'm calling about the status of my claim, invoice number 45621." },
@@ -67,7 +68,7 @@ export function Five9TranscriptPanel() {
               line.speaker === "ai" ? "bg-five9-accent/10" : "bg-secondary"
             }`}>
               {line.speaker === "ai" ? (
-                <Bot className="h-3 w-3 text-five9-accent" />
+                <img src={penguinLogo} alt="Penguin AI" className="h-4 w-4 object-contain" />
               ) : (
                 <User className="h-3 w-3 text-five9-muted" />
               )}
