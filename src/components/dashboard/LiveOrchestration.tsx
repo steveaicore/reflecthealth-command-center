@@ -167,7 +167,7 @@ function Pipeline({ stages, pipeline }: { stages: string[]; pipeline: { activeSt
   return (
     <div className="flex flex-col gap-2 flex-1">
       <span className="type-micro uppercase tracking-[0.15em] text-muted-foreground section-header-accent">AI Orchestration Flow</span>
-      <div className="flow-bg rounded-lg p-3 border border-border flex flex-col gap-3">
+      <div className="flow-bg rounded-lg p-3 border border-border flex flex-col gap-3 flex-1">
         <div className="flex items-center gap-1 flex-wrap">
           {stages.map((stage, i) => (
             <div key={stage} className="flex items-center gap-1 shrink-0">
