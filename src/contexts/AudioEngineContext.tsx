@@ -15,17 +15,26 @@ export type Five9Phase =
   | "awaiting"
   | "provider-verifying"
   | "provider-verified"
+  | "provider-failed"
+  | "provider-retry"
   | "member-verifying"
   | "member-verified"
+  | "member-failed"
+  | "member-retry"
+  | "dob-mismatch"
   | "intent-classifying"
   | "intent-classified"
   | "data-retrieving"
   | "data-retrieved"
+  | "data-timeout"
+  | "data-retry"
   | "response-generating"
   | "response-ready"
   | "confidence-check"
   | "escalation"
   | "resolved";
+
+export type EdgeCaseType = "none" | "wrong_npi" | "invalid_member_id" | "dob_mismatch" | "claim_not_found" | "api_timeout";
 
 export interface Five9ApiCall {
   endpoint: string;
@@ -33,6 +42,8 @@ export interface Five9ApiCall {
   latency: number;
   status: number;
   params?: string;
+  isTimeout?: boolean;
+  isRetry?: boolean;
 }
 
 export interface Five9SessionData {
@@ -50,6 +61,9 @@ export interface Five9SessionData {
   structuredResponse: { fields: { label: string; value: string }[]; generatedResponse: string } | null;
   escalated: boolean;
   escalationReason: string;
+  edgeCaseType: EdgeCaseType;
+  providerVerified: boolean;
+  memberVerified: boolean;
 }
 
 interface AudioEngineState {
