@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useSimulation } from "@/contexts/SimulationContext";
 import { useAudioEngine } from "@/contexts/AudioEngineContext";
 import { useDashboard } from "@/contexts/DashboardContext";
-import type { Five9Phase, Five9ApiCall, Five9SessionData } from "@/contexts/AudioEngineContext";
+import type { Five9Phase, Five9ApiCall, Five9SessionData, EdgeCaseType } from "@/contexts/AudioEngineContext";
 import { User, AlertTriangle, CheckCircle2, Mic, MicOff, Timer } from "lucide-react";
 import { AudioControlPanel } from "./AudioControlPanel";
 import penguinLogo from "@/assets/penguin-logo.png";
@@ -29,6 +29,17 @@ function randomPaId() { return `PA-${Math.floor(100000 + Math.random() * 900000)
 function randomLatency(min: number, max: number) { return Math.floor(min + Math.random() * (max - min)); }
 function randomConfidence(min: number, max: number) { return Math.floor(min + Math.random() * (max - min)); }
 function randomPlan() { return PLAN_NAMES[Math.floor(Math.random() * PLAN_NAMES.length)]; }
+
+// ── Edge case selection ──
+function selectEdgeCase(): EdgeCaseType {
+  const r = Math.random();
+  if (r < 0.70) return "none";
+  if (r < 0.78) return "wrong_npi";
+  if (r < 0.86) return "invalid_member_id";
+  if (r < 0.91) return "dob_mismatch";
+  if (r < 0.96) return "claim_not_found";
+  return "api_timeout";
+}
 
 // ── Call template pool ──
 interface CallTemplate {
@@ -97,18 +108,139 @@ function buildProviderTemplates(npi: string, provName: string, memberId: string,
         { speaker: "ai", text: `Member verified. The PA request is under clinical review. All required documentation has been received. Estimated determination within forty-eight hours.`, phase: "response-ready" },
       ],
     },
-    {
-      intent: "Claim Status",
-      callerType: "Provider",
-      confidenceRange: [65, 78],
-      script: [
-        { speaker: "caller", text: "We believe a claim was underpaid and need review.", phase: "awaiting" },
-        { speaker: "ai", text: "May I have your NPI for verification?" },
-        { speaker: "caller", text: `NPI ${npi}.`, phase: "provider-verifying" },
-        { speaker: "ai", text: "Provider verified. This claim requires manual review by a senior claims analyst. I'm routing you now with full context transfer.", phase: "escalation" },
-      ],
-    },
   ];
+}
+
+// ── Edge case script builders ──
+function buildWrongNpiScript(npi: string, provName: string, memberId: string, dob: string, retrySucceeds: boolean): CallTemplate {
+  const wrongNpi = "1999999999";
+  const correctNpi = npi;
+  const script: CallTemplate["script"] = [
+    { speaker: "caller", text: `This is ${provName} calling to verify benefits.`, phase: "awaiting" },
+    { speaker: "ai", text: "Thank you. Can I have your NPI number please?" },
+    { speaker: "caller", text: `NPI ${wrongNpi}.`, phase: "provider-verifying" },
+    { speaker: "ai", text: "I'm unable to verify that NPI. Could you please repeat or confirm the number?", phase: "provider-failed" },
+  ];
+  if (retrySucceeds) {
+    script.push(
+      { speaker: "caller", text: `Sorry, it's ${correctNpi}.`, phase: "provider-retry" },
+      { speaker: "ai", text: `Provider verified. ${provName}, NPI ${correctNpi}. Please provide the member ID.`, phase: "provider-verified" },
+      { speaker: "caller", text: `Member ID ${memberId}, date of birth ${dob}.`, phase: "member-verifying" },
+      { speaker: "ai", text: `Member verified. Coverage is active. No issues found.`, phase: "response-ready" },
+    );
+  } else {
+    script.push(
+      { speaker: "caller", text: `I think it's ${wrongNpi}.`, phase: "provider-retry" },
+      { speaker: "ai", text: "I'm still unable to verify that NPI. I'll connect you to a representative for assistance.", phase: "escalation" },
+    );
+  }
+  return {
+    intent: "Benefits Verification",
+    callerType: "Provider",
+    confidenceRange: retrySucceeds ? [82, 88] : [68, 76],
+    script,
+  };
+}
+
+function buildInvalidMemberScript(npi: string, provName: string, memberId: string, retrySucceeds: boolean): CallTemplate {
+  const wrongMember = "XXX-0000000";
+  const script: CallTemplate["script"] = [
+    { speaker: "caller", text: `This is ${provName} calling about a patient.`, phase: "awaiting" },
+    { speaker: "ai", text: "May I have your NPI number?" },
+    { speaker: "caller", text: `NPI ${npi}.`, phase: "provider-verifying" },
+    { speaker: "ai", text: `Provider verified. Please provide the member ID.`, phase: "provider-verified" },
+    { speaker: "caller", text: `Member ${wrongMember}.`, phase: "member-verifying" },
+    { speaker: "ai", text: "I'm unable to locate that member record. Could you confirm the ID?", phase: "member-failed" },
+  ];
+  if (retrySucceeds) {
+    script.push(
+      { speaker: "caller", text: `Let me check. It should be ${memberId}.`, phase: "member-retry" },
+      { speaker: "ai", text: `Member verified. Eligibility confirmed.`, phase: "response-ready" },
+    );
+  } else {
+    script.push(
+      { speaker: "caller", text: `I'm not sure of the correct ID.`, phase: "member-retry" },
+      { speaker: "ai", text: "I'm unable to verify the member. I'll transfer you to an agent who can assist.", phase: "escalation" },
+    );
+  }
+  return {
+    intent: "Eligibility Verification",
+    callerType: "Provider",
+    confidenceRange: retrySucceeds ? [80, 86] : [65, 74],
+    script,
+  };
+}
+
+function buildDobMismatchScript(npi: string, provName: string, memberId: string, dob: string, retrySucceeds: boolean): CallTemplate {
+  const wrongDob = "06/15/1990";
+  const script: CallTemplate["script"] = [
+    { speaker: "caller", text: `Calling to verify benefits for a patient.`, phase: "awaiting" },
+    { speaker: "ai", text: "May I have your NPI?" },
+    { speaker: "caller", text: `NPI ${npi}.`, phase: "provider-verifying" },
+    { speaker: "ai", text: `Provider verified. Please provide the member ID.`, phase: "provider-verified" },
+    { speaker: "caller", text: `Member ${memberId}, date of birth ${wrongDob}.`, phase: "member-verifying" },
+    { speaker: "ai", text: "The date of birth provided does not match our records. Please re-confirm.", phase: "dob-mismatch" },
+  ];
+  if (retrySucceeds) {
+    script.push(
+      { speaker: "caller", text: `Sorry, the correct date of birth is ${dob}.`, phase: "member-retry" },
+      { speaker: "ai", text: `Date of birth confirmed. Member verified. Coverage is active.`, phase: "response-ready" },
+    );
+  } else {
+    script.push(
+      { speaker: "caller", text: `I have ${wrongDob} in my records.`, phase: "member-retry" },
+      { speaker: "ai", text: "The date of birth still does not match. For security, I'll transfer you to verify identity.", phase: "escalation" },
+    );
+  }
+  return {
+    intent: "Benefits Verification",
+    callerType: "Provider",
+    confidenceRange: retrySucceeds ? [82, 87] : [70, 78],
+    script,
+  };
+}
+
+function buildClaimNotFoundScript(npi: string, provName: string, memberId: string): CallTemplate {
+  const claimId = randomClaimId();
+  return {
+    intent: "Claim Status",
+    callerType: "Provider",
+    confidenceRange: [72, 80],
+    script: [
+      { speaker: "caller", text: `Calling to check on a claim status.`, phase: "awaiting" },
+      { speaker: "ai", text: "May I have your NPI?" },
+      { speaker: "caller", text: `NPI ${npi}.`, phase: "provider-verifying" },
+      { speaker: "ai", text: "Provider verified. Which claim are you inquiring about?", phase: "provider-verified" },
+      { speaker: "caller", text: `Claim ${claimId} for member ${memberId}.`, phase: "member-verifying" },
+      { speaker: "ai", text: `Member verified. However, I'm unable to locate claim ${claimId} in the system. Let me transfer you to a representative who can assist.`, phase: "escalation" },
+    ],
+  };
+}
+
+function buildApiTimeoutScript(npi: string, provName: string, memberId: string, dob: string, retrySucceeds: boolean): CallTemplate {
+  const script: CallTemplate["script"] = [
+    { speaker: "caller", text: `This is ${provName} calling to check eligibility.`, phase: "awaiting" },
+    { speaker: "ai", text: "May I have your NPI?" },
+    { speaker: "caller", text: `NPI ${npi}.`, phase: "provider-verifying" },
+    { speaker: "ai", text: `Provider verified. Please provide the member ID.`, phase: "provider-verified" },
+    { speaker: "caller", text: `Member ${memberId}.`, phase: "member-verifying" },
+    { speaker: "ai", text: "Member verified. Let me retrieve the eligibility details.", phase: "data-timeout" },
+  ];
+  if (retrySucceeds) {
+    script.push(
+      { speaker: "ai", text: "System is back online. Eligibility confirmed. Coverage is active.", phase: "response-ready" },
+    );
+  } else {
+    script.push(
+      { speaker: "ai", text: "We're experiencing a temporary system delay. I'll connect you to a specialist who can assist.", phase: "escalation" },
+    );
+  }
+  return {
+    intent: "Eligibility Verification",
+    callerType: "Provider",
+    confidenceRange: retrySucceeds ? [80, 86] : [68, 75],
+    script,
+  };
 }
 
 function buildMemberTemplates(memberId: string): CallTemplate[] {
@@ -148,7 +280,17 @@ function buildMemberTemplates(memberId: string): CallTemplate[] {
 }
 
 // ── API call generators per intent ──
-function generateApiCalls(intent: string, memberId: string): Five9ApiCall[] {
+function generateApiCalls(intent: string, memberId: string, edgeCase: EdgeCaseType): Five9ApiCall[] {
+  if (edgeCase === "claim_not_found") {
+    return [
+      { endpoint: `GET /claim-status?claim_id=${randomClaimId()}`, source: "Core Claims System", latency: randomLatency(150, 300), status: 404 },
+    ];
+  }
+  if (edgeCase === "api_timeout") {
+    return [
+      { endpoint: `GET /eligibility?member_id=${memberId}`, source: "Azure Data Lake", latency: 600, status: 504, isTimeout: true },
+    ];
+  }
   switch (intent) {
     case "Claim Status":
     case "Claims Status":
@@ -187,7 +329,18 @@ function generateApiCalls(intent: string, memberId: string): Five9ApiCall[] {
   }
 }
 
-function generateStructuredResponse(intent: string, memberId: string): { fields: { label: string; value: string }[]; generatedResponse: string } {
+function generateStructuredResponse(intent: string, memberId: string, edgeCase: EdgeCaseType): { fields: { label: string; value: string }[]; generatedResponse: string } | null {
+  if (edgeCase === "claim_not_found") {
+    return {
+      fields: [
+        { label: "Claim", value: "Not Located" },
+        { label: "Status", value: "404 — Not Found" },
+      ],
+      generatedResponse: "Unable to locate the specified claim in the system. Routing to agent.",
+    };
+  }
+  if (edgeCase === "api_timeout") return null;
+
   const plan = randomPlan();
   switch (intent) {
     case "Claim Status":
@@ -265,13 +418,31 @@ function generateStructuredResponse(intent: string, memberId: string): { fields:
   }
 }
 
-function pickWeightedTemplate(npi: string, provName: string, memberId: string, dob: string): CallTemplate {
-  const r = Math.random();
-  if (r < 0.75) {
-    const templates = buildProviderTemplates(npi, provName, memberId, dob);
-    return templates[Math.floor(Math.random() * templates.length)];
+function pickTemplate(npi: string, provName: string, memberId: string, dob: string, edgeCase: EdgeCaseType): CallTemplate {
+  if (edgeCase === "none") {
+    const r = Math.random();
+    if (r < 0.75) {
+      const templates = buildProviderTemplates(npi, provName, memberId, dob);
+      return templates[Math.floor(Math.random() * templates.length)];
+    }
+    return buildMemberTemplates(memberId)[Math.floor(Math.random() * 3)];
   }
-  return buildMemberTemplates(memberId)[Math.floor(Math.random() * 3)];
+
+  const retrySucceeds = Math.random() < 0.6; // 60% chance retry works
+  switch (edgeCase) {
+    case "wrong_npi":
+      return buildWrongNpiScript(npi, provName, memberId, dob, retrySucceeds);
+    case "invalid_member_id":
+      return buildInvalidMemberScript(npi, provName, memberId, retrySucceeds);
+    case "dob_mismatch":
+      return buildDobMismatchScript(npi, provName, memberId, dob, retrySucceeds);
+    case "claim_not_found":
+      return buildClaimNotFoundScript(npi, provName, memberId);
+    case "api_timeout":
+      return buildApiTimeoutScript(npi, provName, memberId, dob, retrySucceeds);
+    default:
+      return buildProviderTemplates(npi, provName, memberId, dob)[0];
+  }
 }
 
 type CallStatus = "idle" | "incoming" | "processing" | "resolved" | "escalated";
@@ -308,27 +479,28 @@ export function LiveCallSimulation() {
     isRunningRef.current = true;
     abortRef.current = false;
 
-    // Generate unique session data
     const npi = randomNpi();
     const provName = randomProviderName();
     const memberId = randomMemberId();
     const dob = randomDob();
+    const edgeCase = selectEdgeCase();
 
-    const template = pickWeightedTemplate(npi, provName, memberId, dob);
+    const template = pickTemplate(npi, provName, memberId, dob, edgeCase);
     callIndexRef.current++;
 
     const [lo, hi] = template.confidenceRange;
     const conf = Math.floor(lo + Math.random() * (hi - lo));
 
-    // Check for random escalation (10-15% chance, higher if low confidence or high latency)
     const escalationChance = conf < 88 ? 0.25 : 0.12;
-    const forceEscalation = Math.random() < escalationChance && !template.script.some(s => s.phase === "escalation");
+    const forceEscalation = edgeCase === "none" && Math.random() < escalationChance && !template.script.some(s => s.phase === "escalation");
 
-    const apiCalls = generateApiCalls(template.intent, memberId);
-    const structuredResp = generateStructuredResponse(template.intent, memberId);
+    const apiCalls = generateApiCalls(template.intent, memberId, edgeCase);
+    const structuredResp = generateStructuredResponse(template.intent, memberId, edgeCase);
     const sessionId = `F9-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 
-    // Build session data
+    const hasEscalationInScript = template.script.some(s => s.phase === "escalation");
+    const willEscalate = hasEscalationInScript || forceEscalation || conf < confidenceThreshold;
+
     const sessionData: Five9SessionData = {
       sessionId,
       callerType: template.callerType,
@@ -342,8 +514,20 @@ export function LiveCallSimulation() {
       confidenceScore: conf,
       apiCalls,
       structuredResponse: structuredResp,
-      escalated: forceEscalation || conf < confidenceThreshold,
-      escalationReason: conf < confidenceThreshold ? "Confidence Below Threshold" : forceEscalation ? "Ambiguity Detected" : "",
+      escalated: willEscalate,
+      escalationReason: hasEscalationInScript
+        ? edgeCase === "wrong_npi" ? "Provider Verification Failed"
+        : edgeCase === "invalid_member_id" ? "Member Verification Failed"
+        : edgeCase === "dob_mismatch" ? "DOB Verification Failed"
+        : edgeCase === "claim_not_found" ? "Claim Not Found"
+        : edgeCase === "api_timeout" ? "System Timeout"
+        : "Confidence Below Threshold"
+        : forceEscalation ? "Ambiguity Detected"
+        : conf < confidenceThreshold ? "Confidence Below Threshold"
+        : "",
+      edgeCaseType: edgeCase,
+      providerVerified: edgeCase !== "wrong_npi" || template.script.some(s => s.phase === "provider-verified"),
+      memberVerified: !["invalid_member_id", "dob_mismatch"].includes(edgeCase) || template.script.some(s => s.phase === "member-verified" || s.phase === "response-ready"),
     };
 
     setFive9Session(sessionData);
@@ -362,25 +546,43 @@ export function LiveCallSimulation() {
     for (let lineIdx = 0; lineIdx < template.script.length; lineIdx++) {
       if (abortRef.current) break;
       const line = template.script[lineIdx];
-
       const id = `line-${Date.now()}-${Math.random()}`;
 
-      // Emit phase if this line triggers one
       if (line.phase) {
         setFive9Phase(line.phase);
-        // For data retrieval, trigger between intent classification and response
-        if (line.phase === "member-verified" || line.phase === "intent-classifying") {
-          // Short delay then move to intent classified + data retrieval
+
+        // Handle data-timeout with animated progression
+        if (line.phase === "data-timeout") {
+          setFive9Phase("data-retrieving");
           await new Promise((r) => setTimeout(r, 400));
-          if (line.phase === "intent-classifying") {
-            setFive9Phase("intent-classified");
-            await new Promise((r) => setTimeout(r, 300));
-            setFive9Phase("data-retrieving");
+          setFive9Phase("data-timeout");
+          await new Promise((r) => setTimeout(r, 1200));
+          // Check if next line is response-ready (retry succeeded) or escalation
+          const nextLine = template.script[lineIdx + 1];
+          if (nextLine?.phase === "response-ready") {
+            setFive9Phase("data-retry");
             await new Promise((r) => setTimeout(r, 600));
+            // Update API calls to show retry success
+            const retryCall: Five9ApiCall = { endpoint: apiCalls[0].endpoint, source: apiCalls[0].source, latency: randomLatency(200, 350), status: 200, isRetry: true };
+            setFive9Session({ ...sessionData, apiCalls: [...apiCalls, retryCall], escalated: false, escalationReason: "" });
             setFive9Phase("data-retrieved");
-            await new Promise((r) => setTimeout(r, 200));
-            setFive9Phase("response-generating");
           }
+        }
+
+        // Normal intent classification → data retrieval flow
+        if (line.phase === "intent-classifying") {
+          await new Promise((r) => setTimeout(r, 400));
+          setFive9Phase("intent-classified");
+          await new Promise((r) => setTimeout(r, 300));
+          setFive9Phase("data-retrieving");
+          await new Promise((r) => setTimeout(r, 600));
+          setFive9Phase("data-retrieved");
+          await new Promise((r) => setTimeout(r, 200));
+          setFive9Phase("response-generating");
+        }
+
+        if (line.phase === "member-verified" && edgeCase === "none") {
+          await new Promise((r) => setTimeout(r, 400));
         }
       }
 
@@ -397,23 +599,16 @@ export function LiveCallSimulation() {
 
     if (abortRef.current) { isRunningRef.current = false; setFive9Phase("idle"); return; }
 
-    // Determine outcome
-    const isEscalated = sessionData.escalated || forceEscalation;
-    const deflected = !isEscalated && conf >= confidenceThreshold;
+    const isEscalated = willEscalate;
+    const deflected = !isEscalated;
     const outcome = deflected ? "resolved" as const : "escalated" as const;
 
-    setFive9Phase(deflected ? "resolved" : "escalation");
-    // Update session with final escalation state
-    if (isEscalated) {
-      setFive9Session({ ...sessionData, escalated: true, escalationReason: sessionData.escalationReason || "Confidence Below Threshold" });
-    }
     setFive9Phase(deflected ? "confidence-check" : "escalation");
-
     setCallStatus(outcome);
     setCallCount((c) => c + 1);
 
     const costSaved = deflected ? 4.32 : 0;
-    const minSaved = deflected ? 6 : 0;
+    const minSaved = deflected ? 6 : 1;
 
     setMetrics((prev) => ({
       deflected: prev.deflected + (deflected ? 1 : 0),
@@ -429,7 +624,6 @@ export function LiveCallSimulation() {
       confidence: conf,
     });
 
-    // Brief pause then mark resolved
     await new Promise((r) => setTimeout(r, 800));
     setFive9Phase(deflected ? "resolved" : "escalation");
 
