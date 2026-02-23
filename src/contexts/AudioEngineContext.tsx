@@ -9,6 +9,49 @@ export interface CallOutcome {
 
 export type AudioMode = "embedded" | "executive";
 
+// ── Five9 Live Session Data ──
+export type Five9Phase =
+  | "idle"
+  | "awaiting"
+  | "provider-verifying"
+  | "provider-verified"
+  | "member-verifying"
+  | "member-verified"
+  | "intent-classifying"
+  | "intent-classified"
+  | "data-retrieving"
+  | "data-retrieved"
+  | "response-generating"
+  | "response-ready"
+  | "confidence-check"
+  | "escalation"
+  | "resolved";
+
+export interface Five9ApiCall {
+  endpoint: string;
+  source: string;
+  latency: number;
+  status: number;
+  params?: string;
+}
+
+export interface Five9SessionData {
+  sessionId: string;
+  callerType: "Provider" | "Member";
+  providerNpi: string;
+  providerName: string;
+  providerConfidence: number;
+  memberId: string;
+  memberDob: string;
+  memberConfidence: number;
+  intent: string;
+  confidenceScore: number;
+  apiCalls: Five9ApiCall[];
+  structuredResponse: { fields: { label: string; value: string }[]; generatedResponse: string } | null;
+  escalated: boolean;
+  escalationReason: string;
+}
+
 interface AudioEngineState {
   // Shared state
   audioEnabled: boolean;
@@ -21,6 +64,12 @@ interface AudioEngineState {
   setCurrentCallOutcome: (o: CallOutcome | null) => void;
   liveCallIntent: string;
   setLiveCallIntent: (v: string) => void;
+
+  // Five9 session state
+  five9Phase: Five9Phase;
+  setFive9Phase: (p: Five9Phase) => void;
+  five9Session: Five9SessionData | null;
+  setFive9Session: (s: Five9SessionData | null) => void;
 
   // Playback controls
   isMuted: boolean;
@@ -46,6 +95,8 @@ export function AudioEngineProvider({ children }: { children: React.ReactNode })
   const [confidenceThreshold, setConfidenceThreshold] = useState(85);
   const [currentCallOutcome, setCurrentCallOutcome] = useState<CallOutcome | null>(null);
   const [liveCallIntent, setLiveCallIntent] = useState("");
+  const [five9Phase, setFive9Phase] = useState<Five9Phase>("idle");
+  const [five9Session, setFive9Session] = useState<Five9SessionData | null>(null);
   const [isMuted, setIsMuted] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -144,6 +195,8 @@ export function AudioEngineProvider({ children }: { children: React.ReactNode })
       confidenceThreshold, setConfidenceThreshold,
       currentCallOutcome, setCurrentCallOutcome,
       liveCallIntent, setLiveCallIntent,
+      five9Phase, setFive9Phase,
+      five9Session, setFive9Session,
       isMuted, setIsMuted,
       playbackSpeed, setPlaybackSpeed,
       isPlaying, currentSpeaker, audioMode,

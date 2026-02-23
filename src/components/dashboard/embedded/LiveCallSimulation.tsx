@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useSimulation } from "@/contexts/SimulationContext";
 import { useAudioEngine } from "@/contexts/AudioEngineContext";
 import { useDashboard } from "@/contexts/DashboardContext";
+import type { Five9Phase, Five9ApiCall, Five9SessionData } from "@/contexts/AudioEngineContext";
 import { User, AlertTriangle, CheckCircle2, Mic, MicOff, Timer } from "lucide-react";
 import { AudioControlPanel } from "./AudioControlPanel";
 import penguinLogo from "@/assets/penguin-logo.png";
@@ -9,117 +10,268 @@ import penguinLogo from "@/assets/penguin-logo.png";
 const CALLER_VOICE = "EXAVITQu4vr4xnSDxMaL";
 const AI_VOICE = "onwK4e9ZLuTAKqWW03F9";
 
+// ── Random data generators ──
+const PROVIDER_NAMES = ["Northgate Orthopedic", "Lakeside Medical Group", "Summit Health Partners", "Valley Cardiology Associates", "Coastal Family Medicine", "Heritage Internal Medicine"];
+const NPIS = ["1456789123", "1982345671", "1334567890", "1567890234", "1890123456", "1223456789"];
+const MEMBER_PREFIXES = ["BCX", "MBR", "HLT", "CRX", "PLN"];
+const DOBS = ["01/14/1986", "03/22/1974", "07/08/1992", "11/30/1968", "05/15/1983", "09/02/1995"];
+const PLAN_NAMES = ["UHC Choice Plus PPO", "Blue Cross PPO Gold", "Aetna HMO Select", "Cigna OAP Advantage", "Anthem EPO Standard"];
+
+function randomNpi() { return NPIS[Math.floor(Math.random() * NPIS.length)]; }
+function randomProviderName() { return PROVIDER_NAMES[Math.floor(Math.random() * PROVIDER_NAMES.length)]; }
+function randomMemberId() {
+  const prefix = MEMBER_PREFIXES[Math.floor(Math.random() * MEMBER_PREFIXES.length)];
+  return `${prefix}-${Math.floor(1000000 + Math.random() * 9000000)}`;
+}
+function randomDob() { return DOBS[Math.floor(Math.random() * DOBS.length)]; }
+function randomClaimId() { return `CLM-${Math.floor(10000 + Math.random() * 90000)}`; }
+function randomPaId() { return `PA-${Math.floor(100000 + Math.random() * 900000)}`; }
+function randomLatency(min: number, max: number) { return Math.floor(min + Math.random() * (max - min)); }
+function randomConfidence(min: number, max: number) { return Math.floor(min + Math.random() * (max - min)); }
+function randomPlan() { return PLAN_NAMES[Math.floor(Math.random() * PLAN_NAMES.length)]; }
+
 // ── Call template pool ──
 interface CallTemplate {
   intent: string;
+  callerType: "Provider" | "Member";
   confidenceRange: [number, number];
-  script: { speaker: "caller" | "ai"; text: string }[];
+  script: { speaker: "caller" | "ai"; text: string; phase?: Five9Phase }[];
 }
 
-// Weighted script pool: 75% Provider, 25% Member
-const PROVIDER_TEMPLATES: CallTemplate[] = [
-  {
-    intent: "Benefits Verification",
-    confidenceRange: [90, 95],
-    script: [
-      { speaker: "caller", text: "This is Northgate Orthopedic calling to verify benefits." },
-      { speaker: "ai", text: "Thank you. Can I have your NPI number please?" },
-      { speaker: "caller", text: "NPI 1456789123." },
-      { speaker: "ai", text: "Provider verified. Northgate Orthopedic, NPI 1456789123. Please provide the member ID." },
-      { speaker: "caller", text: "Member ID BCX-8847291, date of birth January 14, 1986." },
-      { speaker: "ai", text: "Member verified. To confirm, you are calling from Northgate Orthopedic, NPI 1456789123, regarding member BCX-8847291. Is that correct?" },
-      { speaker: "caller", text: "That's correct." },
-      { speaker: "ai", text: "Coverage is active under UHC Choice Plus PPO. Specialist visits are covered with a thirty-dollar copay. Deductible is seventy-four percent met. No prior authorization required for in-network providers." },
-      { speaker: "ai", text: "Is there anything else I can help with today?" },
-      { speaker: "caller", text: "No, that's all. Thank you." },
-      { speaker: "ai", text: "Thank you for calling. This verification has been completed and logged." },
-    ],
-  },
-  {
-    intent: "Eligibility Verification",
-    confidenceRange: [90, 94],
-    script: [
-      { speaker: "caller", text: "Calling to confirm eligibility for a patient." },
-      { speaker: "ai", text: "I'd be happy to help. May I have your NPI number?" },
-      { speaker: "caller", text: "NPI 1456789123." },
-      { speaker: "ai", text: "Provider verified. Please provide the member ID." },
-      { speaker: "caller", text: "Member 8824102." },
-      { speaker: "ai", text: "Member verified. Eligibility confirmed. Coverage is active under the employer-sponsored PPO plan effective January 1st, 2026. No lapse detected." },
-    ],
-  },
-  {
-    intent: "Claim Status",
-    confidenceRange: [88, 92],
-    script: [
-      { speaker: "caller", text: "I'm calling to check on a claim." },
-      { speaker: "ai", text: "Of course. May I have your NPI?" },
-      { speaker: "caller", text: "NPI 1456789123." },
-      { speaker: "ai", text: "Provider verified. Which claim are you inquiring about?" },
-      { speaker: "caller", text: "Claim number 772451, submitted February 3rd, for member BCX-8847291." },
-      { speaker: "ai", text: "Member verified. Claim 772451 was received February 3rd and is currently processing. Determination expected within five business days. No additional documentation required." },
-    ],
-  },
-  {
-    intent: "Prior Authorization Status",
-    confidenceRange: [85, 90],
-    script: [
-      { speaker: "caller", text: "Checking on a prior authorization request." },
-      { speaker: "ai", text: "May I have your NPI number?" },
-      { speaker: "caller", text: "NPI 1456789123." },
-      { speaker: "ai", text: "Provider verified. Please provide the member ID or PA reference number." },
-      { speaker: "caller", text: "Member BCX-8847291." },
-      { speaker: "ai", text: "Member verified. The PA request is under clinical review. All required documentation has been received. Estimated determination within forty-eight hours." },
-    ],
-  },
-  {
-    intent: "Claim Status",
-    confidenceRange: [65, 78],
-    script: [
-      { speaker: "caller", text: "We believe claim 554102 was underpaid and need review." },
-      { speaker: "ai", text: "May I have your NPI for verification?" },
-      { speaker: "caller", text: "NPI 1456789123." },
-      { speaker: "ai", text: "Provider verified. This claim requires manual review by a senior claims analyst. I'm routing you now with full context transfer." },
-    ],
-  },
-];
+function buildProviderTemplates(npi: string, provName: string, memberId: string, dob: string): CallTemplate[] {
+  return [
+    {
+      intent: "Benefits Verification",
+      callerType: "Provider",
+      confidenceRange: [90, 96],
+      script: [
+        { speaker: "caller", text: `This is ${provName} calling to verify benefits.`, phase: "awaiting" },
+        { speaker: "ai", text: "Thank you. Can I have your NPI number please?" },
+        { speaker: "caller", text: `NPI ${npi}.`, phase: "provider-verifying" },
+        { speaker: "ai", text: `Provider verified. ${provName}, NPI ${npi}. Please provide the member ID.`, phase: "provider-verified" },
+        { speaker: "caller", text: `Member ID ${memberId}, date of birth ${dob}.`, phase: "member-verifying" },
+        { speaker: "ai", text: `Member verified. To confirm, you are calling from ${provName}, NPI ${npi}, regarding member ${memberId}. Is that correct?`, phase: "member-verified" },
+        { speaker: "caller", text: "That's correct.", phase: "intent-classifying" },
+        { speaker: "ai", text: `Coverage is active under ${randomPlan()}. Specialist visits are covered with a thirty-dollar copay. Deductible is seventy-four percent met. No prior authorization required for in-network providers.`, phase: "response-ready" },
+        { speaker: "ai", text: "Is there anything else I can help with today?" },
+        { speaker: "caller", text: "No, that's all. Thank you." },
+        { speaker: "ai", text: "Thank you for calling. This verification has been completed and logged.", phase: "resolved" },
+      ],
+    },
+    {
+      intent: "Eligibility Verification",
+      callerType: "Provider",
+      confidenceRange: [90, 95],
+      script: [
+        { speaker: "caller", text: "Calling to confirm eligibility for a patient.", phase: "awaiting" },
+        { speaker: "ai", text: "I'd be happy to help. May I have your NPI number?" },
+        { speaker: "caller", text: `NPI ${npi}.`, phase: "provider-verifying" },
+        { speaker: "ai", text: `Provider verified. Please provide the member ID.`, phase: "provider-verified" },
+        { speaker: "caller", text: `Member ${memberId}.`, phase: "member-verifying" },
+        { speaker: "ai", text: `Member verified. Eligibility confirmed. Coverage is active under the employer-sponsored ${randomPlan()} effective January 1st, 2026. No lapse detected.`, phase: "response-ready" },
+      ],
+    },
+    {
+      intent: "Claim Status",
+      callerType: "Provider",
+      confidenceRange: [88, 93],
+      script: [
+        { speaker: "caller", text: "I'm calling to check on a claim.", phase: "awaiting" },
+        { speaker: "ai", text: "Of course. May I have your NPI?" },
+        { speaker: "caller", text: `NPI ${npi}.`, phase: "provider-verifying" },
+        { speaker: "ai", text: "Provider verified. Which claim are you inquiring about?", phase: "provider-verified" },
+        { speaker: "caller", text: `Claim number ${randomClaimId()}, submitted February 3rd, for member ${memberId}.`, phase: "member-verifying" },
+        { speaker: "ai", text: `Member verified. The claim was received February 3rd and is currently processing. Determination expected within five business days. No additional documentation required.`, phase: "response-ready" },
+      ],
+    },
+    {
+      intent: "Prior Authorization Status",
+      callerType: "Provider",
+      confidenceRange: [85, 91],
+      script: [
+        { speaker: "caller", text: "Checking on a prior authorization request.", phase: "awaiting" },
+        { speaker: "ai", text: "May I have your NPI number?" },
+        { speaker: "caller", text: `NPI ${npi}.`, phase: "provider-verifying" },
+        { speaker: "ai", text: "Provider verified. Please provide the member ID or PA reference number.", phase: "provider-verified" },
+        { speaker: "caller", text: `Member ${memberId}.`, phase: "member-verifying" },
+        { speaker: "ai", text: `Member verified. The PA request is under clinical review. All required documentation has been received. Estimated determination within forty-eight hours.`, phase: "response-ready" },
+      ],
+    },
+    {
+      intent: "Claim Status",
+      callerType: "Provider",
+      confidenceRange: [65, 78],
+      script: [
+        { speaker: "caller", text: "We believe a claim was underpaid and need review.", phase: "awaiting" },
+        { speaker: "ai", text: "May I have your NPI for verification?" },
+        { speaker: "caller", text: `NPI ${npi}.`, phase: "provider-verifying" },
+        { speaker: "ai", text: "Provider verified. This claim requires manual review by a senior claims analyst. I'm routing you now with full context transfer.", phase: "escalation" },
+      ],
+    },
+  ];
+}
 
-const MEMBER_TEMPLATES: CallTemplate[] = [
-  {
-    intent: "Claims Status",
-    confidenceRange: [90, 96],
-    script: [
-      { speaker: "caller", text: "I'd like to check the status of a recent claim." },
-      { speaker: "ai", text: "Please provide your member ID." },
-      { speaker: "caller", text: "It's 5529103." },
-      { speaker: "ai", text: "Your claim was processed and approved. Payment was issued on February 15th." },
-    ],
-  },
-  {
-    intent: "ID Card Replacement",
-    confidenceRange: [92, 98],
-    script: [
-      { speaker: "caller", text: "I need a replacement ID card." },
-      { speaker: "ai", text: "A new ID card has been requested. It will arrive within seven to ten business days. A digital copy has also been sent to the email on file." },
-    ],
-  },
-  {
-    intent: "Deductible / OOP Inquiry",
-    confidenceRange: [90, 96],
-    script: [
-      { speaker: "caller", text: "Can you tell me how much of my deductible I've met so far?" },
-      { speaker: "ai", text: "Please provide your member ID." },
-      { speaker: "caller", text: "Member 6641028." },
-      { speaker: "ai", text: "You have met twelve hundred of your two-thousand-dollar individual deductible. Your out-of-pocket maximum balance remaining is four thousand two hundred dollars." },
-    ],
-  },
-];
+function buildMemberTemplates(memberId: string): CallTemplate[] {
+  return [
+    {
+      intent: "Claims Status",
+      callerType: "Member",
+      confidenceRange: [90, 96],
+      script: [
+        { speaker: "caller", text: "I'd like to check the status of a recent claim.", phase: "awaiting" },
+        { speaker: "ai", text: "Please provide your member ID.", phase: "member-verifying" },
+        { speaker: "caller", text: `It's ${memberId}.` },
+        { speaker: "ai", text: "Your claim was processed and approved. Payment was issued on February 15th.", phase: "response-ready" },
+      ],
+    },
+    {
+      intent: "ID Card Replacement",
+      callerType: "Member",
+      confidenceRange: [92, 98],
+      script: [
+        { speaker: "caller", text: "I need a replacement ID card.", phase: "awaiting" },
+        { speaker: "ai", text: "A new ID card has been requested. It will arrive within seven to ten business days. A digital copy has also been sent to the email on file.", phase: "response-ready" },
+      ],
+    },
+    {
+      intent: "Deductible / OOP Inquiry",
+      callerType: "Member",
+      confidenceRange: [90, 96],
+      script: [
+        { speaker: "caller", text: "Can you tell me how much of my deductible I've met so far?", phase: "awaiting" },
+        { speaker: "ai", text: "Please provide your member ID.", phase: "member-verifying" },
+        { speaker: "caller", text: `Member ${memberId}.` },
+        { speaker: "ai", text: "You have met twelve hundred of your two-thousand-dollar individual deductible. Your out-of-pocket maximum balance remaining is four thousand two hundred dollars.", phase: "response-ready" },
+      ],
+    },
+  ];
+}
 
-function pickWeightedTemplate(): CallTemplate {
+// ── API call generators per intent ──
+function generateApiCalls(intent: string, memberId: string): Five9ApiCall[] {
+  switch (intent) {
+    case "Claim Status":
+    case "Claims Status":
+      return [
+        { endpoint: `GET /claim-status?claim_id=${randomClaimId()}`, source: "Core Claims System", latency: randomLatency(150, 300), status: 200 },
+        { endpoint: `GET /eligibility?member_id=${memberId}`, source: "Azure Data Lake", latency: randomLatency(200, 350), status: 200 },
+      ];
+    case "Eligibility Verification":
+      return [
+        { endpoint: `GET /eligibility?member_id=${memberId}`, source: "Azure Data Lake", latency: randomLatency(200, 350), status: 200 },
+        { endpoint: "GET /provider-verify", source: "Provider Directory Database", latency: randomLatency(80, 150), status: 200 },
+      ];
+    case "Prior Authorization Status":
+      return [
+        { endpoint: `GET /prior-auth-status?auth_id=${randomPaId()}`, source: "Prior Authorization System", latency: randomLatency(250, 400), status: 200 },
+        { endpoint: `GET /eligibility?member_id=${memberId}`, source: "Azure Data Lake", latency: randomLatency(200, 350), status: 200 },
+      ];
+    case "Benefits Verification":
+      return [
+        { endpoint: `GET /eligibility?member_id=${memberId}`, source: "Azure Data Lake", latency: randomLatency(200, 350), status: 200 },
+        { endpoint: "GET /benefits-schedule", source: "Core Claims System", latency: randomLatency(120, 200), status: 200 },
+      ];
+    case "ID Card Replacement":
+      return [
+        { endpoint: `GET /member-profile?member_id=${memberId}`, source: "Azure Data Lake", latency: randomLatency(150, 250), status: 200 },
+      ];
+    case "Deductible / OOP Inquiry":
+      return [
+        { endpoint: `GET /accumulator?member_id=${memberId}`, source: "Azure Data Lake", latency: randomLatency(180, 300), status: 200 },
+        { endpoint: `GET /benefits-schedule?member_id=${memberId}`, source: "Core Claims System", latency: randomLatency(120, 200), status: 200 },
+      ];
+    default:
+      return [
+        { endpoint: `GET /eligibility?member_id=${memberId}`, source: "Azure Data Lake", latency: randomLatency(200, 350), status: 200 },
+      ];
+  }
+}
+
+function generateStructuredResponse(intent: string, memberId: string): { fields: { label: string; value: string }[]; generatedResponse: string } {
+  const plan = randomPlan();
+  switch (intent) {
+    case "Claim Status":
+    case "Claims Status": {
+      const claimId = randomClaimId();
+      return {
+        fields: [
+          { label: "Claim", value: `#${claimId}` },
+          { label: "Status", value: "Processing" },
+          { label: "Expected Completion", value: `${Math.floor(3 + Math.random() * 5)} Business Days` },
+        ],
+        generatedResponse: `Claim ${claimId} was received and is currently processing. Determination expected within five business days.`,
+      };
+    }
+    case "Eligibility Verification":
+      return {
+        fields: [
+          { label: "Plan", value: plan },
+          { label: "Status", value: "Active" },
+          { label: "Effective", value: "01/01/2026" },
+        ],
+        generatedResponse: `Eligibility confirmed. Coverage is active under the employer-sponsored ${plan}. No lapse in coverage detected.`,
+      };
+    case "Prior Authorization Status": {
+      const paId = randomPaId();
+      return {
+        fields: [
+          { label: "PA Request", value: `#${paId}` },
+          { label: "Status", value: "Under Clinical Review" },
+          { label: "ETA", value: "48 Hours" },
+        ],
+        generatedResponse: `PA request is under clinical review. All required clinical documentation has been received. Estimated determination within 48 hours.`,
+      };
+    }
+    case "Benefits Verification": {
+      const deductPct = Math.floor(50 + Math.random() * 40);
+      const deductMet = Math.floor(800 + Math.random() * 800);
+      const deductTotal = Math.floor(deductMet / (deductPct / 100));
+      return {
+        fields: [
+          { label: "Plan", value: plan },
+          { label: "Copay", value: `$${Math.floor(20 + Math.random() * 30)} (Specialist)` },
+          { label: "Deductible Met", value: `${deductPct}% ($${deductMet.toLocaleString()} / $${deductTotal.toLocaleString()})` },
+        ],
+        generatedResponse: `Member is active. In-network specialist copay confirmed. Deductible: ${deductPct}% met. Coverage confirmed through 12/31/2026.`,
+      };
+    }
+    case "ID Card Replacement":
+      return {
+        fields: [
+          { label: "Member", value: memberId },
+          { label: "Card Status", value: "Requested" },
+          { label: "Delivery", value: "7–10 Business Days" },
+        ],
+        generatedResponse: "New ID card has been requested. Digital copy sent to email on file.",
+      };
+    case "Deductible / OOP Inquiry": {
+      const met = Math.floor(600 + Math.random() * 1200);
+      const total = 2000;
+      const oopRemain = Math.floor(2000 + Math.random() * 3000);
+      return {
+        fields: [
+          { label: "Deductible Met", value: `$${met.toLocaleString()} / $${total.toLocaleString()}` },
+          { label: "OOP Remaining", value: `$${oopRemain.toLocaleString()}` },
+          { label: "Plan Year", value: "2026" },
+        ],
+        generatedResponse: `Individual deductible: $${met} of $${total} met. Out-of-pocket maximum remaining: $${oopRemain.toLocaleString()}.`,
+      };
+    }
+    default:
+      return {
+        fields: [{ label: "Status", value: "Processed" }],
+        generatedResponse: "Request has been processed successfully.",
+      };
+  }
+}
+
+function pickWeightedTemplate(npi: string, provName: string, memberId: string, dob: string): CallTemplate {
   const r = Math.random();
   if (r < 0.75) {
-    return PROVIDER_TEMPLATES[Math.floor(Math.random() * PROVIDER_TEMPLATES.length)];
+    const templates = buildProviderTemplates(npi, provName, memberId, dob);
+    return templates[Math.floor(Math.random() * templates.length)];
   }
-  return MEMBER_TEMPLATES[Math.floor(Math.random() * MEMBER_TEMPLATES.length)];
+  return buildMemberTemplates(memberId)[Math.floor(Math.random() * 3)];
 }
 
 type CallStatus = "idle" | "incoming" | "processing" | "resolved" | "escalated";
@@ -137,7 +289,7 @@ export function LiveCallSimulation() {
   const {
     audioEnabled, setAudioEnabled, isLiveSimulation, setIsLiveSimulation,
     confidenceThreshold, playTTS, stopAudio, setCurrentCallOutcome,
-    isPlaying, setLiveCallIntent,
+    isPlaying, setLiveCallIntent, setFive9Phase, setFive9Session,
   } = useAudioEngine();
 
   const [transcript, setTranscript] = useState<TranscriptLine[]>([]);
@@ -156,51 +308,107 @@ export function LiveCallSimulation() {
     isRunningRef.current = true;
     abortRef.current = false;
 
-    const template = pickWeightedTemplate();
+    // Generate unique session data
+    const npi = randomNpi();
+    const provName = randomProviderName();
+    const memberId = randomMemberId();
+    const dob = randomDob();
+
+    const template = pickWeightedTemplate(npi, provName, memberId, dob);
     callIndexRef.current++;
 
-    // Generate confidence from template range
     const [lo, hi] = template.confidenceRange;
     const conf = Math.floor(lo + Math.random() * (hi - lo));
 
+    // Check for random escalation (10-15% chance, higher if low confidence or high latency)
+    const escalationChance = conf < 88 ? 0.25 : 0.12;
+    const forceEscalation = Math.random() < escalationChance && !template.script.some(s => s.phase === "escalation");
+
+    const apiCalls = generateApiCalls(template.intent, memberId);
+    const structuredResp = generateStructuredResponse(template.intent, memberId);
+    const sessionId = `F9-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+
+    // Build session data
+    const sessionData: Five9SessionData = {
+      sessionId,
+      callerType: template.callerType,
+      providerNpi: npi,
+      providerName: provName,
+      providerConfidence: randomConfidence(96, 99),
+      memberId,
+      memberDob: dob,
+      memberConfidence: randomConfidence(94, 99),
+      intent: template.intent,
+      confidenceScore: conf,
+      apiCalls,
+      structuredResponse: structuredResp,
+      escalated: forceEscalation || conf < confidenceThreshold,
+      escalationReason: conf < confidenceThreshold ? "Confidence Below Threshold" : forceEscalation ? "Ambiguity Detected" : "",
+    };
+
+    setFive9Session(sessionData);
+    setFive9Phase("awaiting");
     setCurrentIntent(template.intent);
     setLiveCallIntent(template.intent);
     setCallConfidence(conf);
     setCallStatus("incoming");
     setTranscript([]);
 
-    // Brief "incoming" visual
     await new Promise((r) => setTimeout(r, 800));
-    if (abortRef.current) { isRunningRef.current = false; return; }
+    if (abortRef.current) { isRunningRef.current = false; setFive9Phase("idle"); return; }
 
     setCallStatus("processing");
 
-    for (const line of template.script) {
+    for (let lineIdx = 0; lineIdx < template.script.length; lineIdx++) {
       if (abortRef.current) break;
+      const line = template.script[lineIdx];
 
       const id = `line-${Date.now()}-${Math.random()}`;
 
-      // Show line with typing indicator
+      // Emit phase if this line triggers one
+      if (line.phase) {
+        setFive9Phase(line.phase);
+        // For data retrieval, trigger between intent classification and response
+        if (line.phase === "member-verified" || line.phase === "intent-classifying") {
+          // Short delay then move to intent classified + data retrieval
+          await new Promise((r) => setTimeout(r, 400));
+          if (line.phase === "intent-classifying") {
+            setFive9Phase("intent-classified");
+            await new Promise((r) => setTimeout(r, 300));
+            setFive9Phase("data-retrieving");
+            await new Promise((r) => setTimeout(r, 600));
+            setFive9Phase("data-retrieved");
+            await new Promise((r) => setTimeout(r, 200));
+            setFive9Phase("response-generating");
+          }
+        }
+      }
+
       setTranscript((prev) => [...prev, { id, speaker: line.speaker, text: line.text, typing: true }]);
 
-      // Play audio (awaits completion — mutex in engine prevents overlap)
       const voiceId = line.speaker === "caller" ? CALLER_VOICE : AI_VOICE;
       await playTTS(line.text, voiceId, line.speaker === "ai" ? 0.5 : 0.35);
 
       if (abortRef.current) break;
 
-      // Remove typing indicator
       setTranscript((prev) => prev.map((l) => (l.id === id ? { ...l, typing: false } : l)));
-
-      // 300ms buffer between speakers
       await new Promise((r) => setTimeout(r, 300));
     }
 
-    if (abortRef.current) { isRunningRef.current = false; return; }
+    if (abortRef.current) { isRunningRef.current = false; setFive9Phase("idle"); return; }
 
     // Determine outcome
-    const deflected = conf >= confidenceThreshold;
+    const isEscalated = sessionData.escalated || forceEscalation;
+    const deflected = !isEscalated && conf >= confidenceThreshold;
     const outcome = deflected ? "resolved" as const : "escalated" as const;
+
+    setFive9Phase(deflected ? "resolved" : "escalation");
+    // Update session with final escalation state
+    if (isEscalated) {
+      setFive9Session({ ...sessionData, escalated: true, escalationReason: sessionData.escalationReason || "Confidence Below Threshold" });
+    }
+    setFive9Phase(deflected ? "confidence-check" : "escalation");
+
     setCallStatus(outcome);
     setCallCount((c) => c + 1);
 
@@ -221,10 +429,14 @@ export function LiveCallSimulation() {
       confidence: conf,
     });
 
-    isRunningRef.current = false;
-  }, [confidenceThreshold, playTTS, setCurrentCallOutcome]);
+    // Brief pause then mark resolved
+    await new Promise((r) => setTimeout(r, 800));
+    setFive9Phase(deflected ? "resolved" : "escalation");
 
-  // Auto-advance: after resolved/escalated, wait then start next call
+    isRunningRef.current = false;
+  }, [confidenceThreshold, playTTS, setCurrentCallOutcome, setFive9Phase, setFive9Session, setLiveCallIntent]);
+
+  // Auto-advance
   useEffect(() => {
     if (!isLiveSimulation || !audioEnabled) return;
     if (callStatus === "resolved" || callStatus === "escalated") {
@@ -248,6 +460,8 @@ export function LiveCallSimulation() {
       stopAudio();
       isRunningRef.current = false;
       setCallStatus("idle");
+      setFive9Phase("idle");
+      setFive9Session(null);
     } else {
       setIsLiveSimulation(true);
       setCallStatus("idle");
