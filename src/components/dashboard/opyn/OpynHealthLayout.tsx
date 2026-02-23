@@ -6,6 +6,7 @@ import penguinLogo from "@/assets/penguin-logo-pink.png";
 import { MemberBenefitAssistant } from "./MemberBenefitAssistant";
 import { CostTransparencyPanel } from "./CostTransparencyPanel";
 import { ProviderPortalView } from "./ProviderPortalView";
+import { useOpynSimulation, type SimPhase } from "./useOpynSimulation";
 
 type OpynMode = "member" | "provider";
 
@@ -147,6 +148,7 @@ export function OpynHealthLayout() {
   const { setDeploymentMode } = useDashboard();
   const [portalMode, setPortalMode] = useState<OpynMode>("member");
   const [orchestrationOpen, setOrchestrationOpen] = useState(false);
+  const sim = useOpynSimulation();
 
   return (
     <div className="min-h-screen flex flex-col bg-[hsl(var(--opyn-bg))]">
@@ -234,8 +236,8 @@ export function OpynHealthLayout() {
         <main className="flex-1 overflow-y-auto p-5">
           {portalMode === "member" ? (
             <div className="max-w-4xl mx-auto space-y-6">
-              <MemberBenefitAssistant />
-              <CostTransparencyPanel />
+              <MemberBenefitAssistant sim={sim} />
+              <CostTransparencyPanel sim={sim} />
             </div>
           ) : (
             <div className="max-w-4xl mx-auto">
