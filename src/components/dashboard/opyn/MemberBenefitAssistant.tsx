@@ -3,30 +3,13 @@ import { MessageCircle, Zap, CheckCircle, Activity, Volume2, Headphones } from "
 import { Progress } from "@/components/ui/progress";
 import penguinLogo from "@/assets/penguin-logo-pink.png";
 import { useAudioEngine } from "@/contexts/AudioEngineContext";
+import { type OpynSimSession, type SimPhase, buildSimMessages, buildPipelineStages } from "./useOpynSimulation";
 
 interface ChatMessage {
   role: "member" | "ai";
   content: string;
   extras?: React.ReactNode;
 }
-
-const SIM_MESSAGES: { role: "member" | "ai"; text: string; delay: number }[] = [
-  { role: "member", text: "I need a knee replacement. Can you help me understand costs?", delay: 0 },
-  { role: "ai", text: "Absolutely! I'm pulling your plan details and checking in-network providers now…", delay: 1400 },
-  { role: "member", text: "Is Dr. Martinez in my network?", delay: 3200 },
-  { role: "ai", text: "Yes! Dr. Sarah Martinez at Valley Orthopedic Center is in-network. She has a 4.8★ rating with 12+ years of experience in total joint replacement.", delay: 4800 },
-  { role: "member", text: "What's my out-of-pocket going to be?", delay: 7000 },
-  { role: "ai", text: "Based on your remaining deductible of $650 and 20% coinsurance, your estimated out-of-pocket for in-network would be ~$7,762. You'll hit your OOP max at $8,000. Want me to schedule a consultation?", delay: 8800 },
-];
-
-const SIM_INTELLIGENCE: { label: string; value: string; delay: number }[] = [
-  { label: "Intent Detected", value: "Benefit Inquiry → Cost Estimation", delay: 800 },
-  { label: "Plan Loaded", value: "Blue Cross PPO Gold — Active", delay: 1600 },
-  { label: "Provider Search", value: "In-Network Match Found", delay: 3600 },
-  { label: "Cost Engine", value: "Accumulator + Coinsurance Calculated", delay: 7400 },
-  { label: "Compliance", value: "HIPAA Verified • PHI Access Logged", delay: 8000 },
-  { label: "Recommendation", value: "Schedule CTA Generated", delay: 9200 },
-];
 
 const VOICE_STEPS = [
   { text: "Welcome to your Opyn Health benefit assistant.", voiceId: "EXAVITQu4vr4xnSDxMaL", highlight: null },
@@ -36,7 +19,17 @@ const VOICE_STEPS = [
   { text: "All eligibility and cost validation has been pre-confirmed.", voiceId: "EXAVITQu4vr4xnSDxMaL", highlight: "compliance" },
 ];
 
-export function MemberBenefitAssistant() {
+interface MemberBenefitAssistantProps {
+  sim: {
+    session: OpynSimSession | null;
+    phase: SimPhase;
+    setPhase: (p: SimPhase) => void;
+    startSimulation: () => OpynSimSession;
+    resetSimulation: () => void;
+  };
+}
+
+export function MemberBenefitAssistant({ sim }: MemberBenefitAssistantProps) {
   const [simulating, setSimulating] = useState(false);
   const [simMessages, setSimMessages] = useState<ChatMessage[]>([]);
   const [intel, setIntel] = useState<{ label: string; value: string }[]>([]);
@@ -48,28 +41,59 @@ export function MemberBenefitAssistant() {
   const voiceCancelled = useRef(false);
 
   const runSimulation = useCallback(() => {
+    const session = sim.startSimulation();
     setSimulating(true);
     setSimMessages([]);
     setIntel([]);
     setSimDone(false);
 
-    SIM_MESSAGES.forEach((msg) => {
+    const messages = buildSimMessages(session);
+    const stages = buildPipelineStages(session);
+
+    // Phase progression synced to transcript timing
+    const phaseTimings: { phase: SimPhase; delay: number }[] = [
+      { phase: "intent_detected", delay: 800 },
+      { phase: "plan_loaded", delay: 1600 },
+      { phase: "searching_providers", delay: 3200 },
+      { phase: "provider_search", delay: 3600 },
+      { phase: "cost_engine", delay: 7400 },
+      { phase: "compliance", delay: 8000 },
+      { phase: "recommendation", delay: 9200 },
+      { phase: "done", delay: 10500 },
+    ];
+
+    // Insert edge case phases
+    if (session.edgeCase === "prior_auth_required") {
+      phaseTimings.splice(5, 0, { phase: "edge_prior_auth", delay: 7700 });
+    }
+    if (session.edgeCase === "no_in_network_nearby") {
+      phaseTimings.splice(3, 0, { phase: "edge_no_provider", delay: 3400 });
+    }
+    if (session.edgeCase === "pending_review") {
+      phaseTimings.splice(5, 0, { phase: "edge_pending_review", delay: 7700 });
+    }
+
+    messages.forEach((msg) => {
       setTimeout(() => {
         setSimMessages((prev) => [...prev, { role: msg.role, content: msg.text }]);
       }, msg.delay);
     });
 
-    SIM_INTELLIGENCE.forEach((item) => {
+    stages.forEach((item) => {
       setTimeout(() => {
         setIntel((prev) => [...prev, { label: item.label, value: item.value }]);
       }, item.delay);
+    });
+
+    phaseTimings.forEach(({ phase, delay }) => {
+      setTimeout(() => sim.setPhase(phase), delay);
     });
 
     setTimeout(() => {
       setSimDone(true);
       setTimeout(() => setSimulating(false), 500);
     }, 11000);
-  }, []);
+  }, [sim]);
 
   const runVoiceWalkthrough = useCallback(async () => {
     voiceCancelled.current = false;
@@ -85,7 +109,6 @@ export function MemberBenefitAssistant() {
       try {
         await audioEngine.playTTS(step.text, step.voiceId, 0.6);
       } catch {
-        // TTS failed, continue with delays
         await new Promise(r => setTimeout(r, 2500));
       }
       if (voiceCancelled.current) break;
@@ -209,7 +232,9 @@ export function MemberBenefitAssistant() {
             {simDone && (
               <div className="mt-2 pt-2 border-t border-[hsl(var(--opyn-purple)/0.2)] space-y-1">
                 <p className="text-[10px] font-semibold text-[hsl(var(--opyn-green))]">✓ Simulation Complete</p>
-                <p className="text-[9px] text-muted-foreground">6 pipeline stages • 0 escalations • 98% confidence</p>
+                <p className="text-[9px] text-muted-foreground">
+                  {intel.length} pipeline stages • {sim.session?.edgeCase !== "none" ? "1 edge case" : "0 escalations"} • 98% confidence
+                </p>
               </div>
             )}
           </div>
@@ -228,21 +253,18 @@ function StaticChat({ highlight, voiceStep }: { highlight: string | null; voiceS
       <h3 className="text-base font-bold text-foreground text-center">Help with my benefits</h3>
       
       <div className="space-y-4">
-        {/* Member message — purple bubble */}
         <div className="flex justify-end">
           <div className="bg-[hsl(var(--opyn-purple))] rounded-2xl rounded-br-sm px-4 py-3 max-w-[80%]">
             <p className="text-xs text-white font-medium">Have I met my deductible? What will I pay for a knee replacement?</p>
           </div>
         </div>
 
-        {/* AI response */}
         <div className="space-y-3">
           <p className="text-xs font-bold text-[hsl(var(--opyn-purple))]">Virtual Assistant</p>
           <p className="text-sm text-foreground">
             Susan, your plan includes access to a surgical Center of Excellence. If you decide to receive your care at the preferred location, you will pay <span className="font-bold">$0 out of pocket.</span>
           </p>
 
-          {/* Member info card */}
           <div className={`rounded-2xl border border-border bg-card p-4 space-y-3 transition-all duration-500 ${highlight === "provider" ? "ring-2 ring-[hsl(var(--opyn-green))]" : ""}`}>
             <div>
               <p className="text-sm font-bold text-foreground">Maria Smithfield</p>
@@ -250,7 +272,6 @@ function StaticChat({ highlight, voiceStep }: { highlight: string | null; voiceS
               <p className="text-[10px] text-muted-foreground italic">As of Jan 25, 2026</p>
             </div>
 
-            {/* Accumulator bars */}
             <div className="space-y-4">
               <div className={`transition-all duration-500 ${highlight === "deductible" ? "ring-2 ring-[hsl(var(--opyn-purple))] rounded-lg p-1.5" : ""}`}>
                 <p className="text-xs font-semibold text-foreground mb-1">In-Network Deductible</p>
