@@ -109,9 +109,10 @@ export function Five9AIPanel() {
           <img src={penguinAiLogo} alt="Penguin AI" className="h-3.5" />
           <span className="type-h3 text-foreground">Provider Orchestration</span>
         </div>
-        <span className="type-micro text-five9-muted">
-          {session ? `Session: ${session.sessionId.slice(0, 12)}` : "Powered by Penguin AI"}
-        </span>
+        <div className="flex items-center gap-1">
+          {session && <span className="type-micro text-five9-muted font-mono">{session.sessionId.slice(0, 12)}</span>}
+          <img src={penguinAiLogo} alt="Penguin AI" className="h-3" />
+        </div>
       </div>
 
       {/* Awaiting state */}
