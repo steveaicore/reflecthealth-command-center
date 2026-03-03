@@ -14,6 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_preferences: {
+        Row: {
+          agent_user_id: string
+          default_use_case_id: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          agent_user_id: string
+          default_use_case_id?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          agent_user_id?: string
+          default_use_case_id?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      audit_events: {
+        Row: {
+          actor_user_id: string
+          call_id: string | null
+          event_type: string
+          hash_curr: string | null
+          hash_prev: string | null
+          id: string
+          payload: Json | null
+          timestamp: string
+          use_case_id: string | null
+        }
+        Insert: {
+          actor_user_id?: string
+          call_id?: string | null
+          event_type: string
+          hash_curr?: string | null
+          hash_prev?: string | null
+          id?: string
+          payload?: Json | null
+          timestamp?: string
+          use_case_id?: string | null
+        }
+        Update: {
+          actor_user_id?: string
+          call_id?: string | null
+          event_type?: string
+          hash_curr?: string | null
+          hash_prev?: string | null
+          id?: string
+          payload?: Json | null
+          timestamp?: string
+          use_case_id?: string | null
+        }
+        Relationships: []
+      }
       automation_scenarios: {
         Row: {
           analysis_id: string | null

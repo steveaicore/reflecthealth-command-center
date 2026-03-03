@@ -3,6 +3,8 @@ import { useSimulation } from "@/contexts/SimulationContext";
 import { useDashboard } from "@/contexts/DashboardContext";
 import { useAudioEngine, type Five9Phase } from "@/contexts/AudioEngineContext";
 import { DetailModal } from "../DetailModal";
+import { AgentAssistPanels } from "./AgentAssistPanels";
+import { getUseCaseById } from "./useCaseProfiles";
 import penguinAiLogo from "@/assets/penguin-ai-logo.png";
 import penguinLogo from "@/assets/penguin-logo.png";
 import {
@@ -63,7 +65,7 @@ function LatencyCounter({ target, isTimeout }: { target: number; isTimeout?: boo
   return <span>{value}ms</span>;
 }
 
-export function Five9AIPanel() {
+export function Five9AIPanel({ selectedUseCaseId }: { selectedUseCaseId: string }) {
   const { pipeline } = useSimulation();
   const { callParams } = useDashboard();
   const { five9Phase, five9Session, liveCallIntent } = useAudioEngine();
@@ -71,6 +73,7 @@ export function Five9AIPanel() {
   const [complianceModalOpen, setComplianceModalOpen] = useState(false);
   const [systemActivityOpen, setSystemActivityOpen] = useState(false);
 
+  const useCaseProfile = getUseCaseById(selectedUseCaseId);
   const session = five9Session;
   const phase = five9Phase;
   const activeStageIdx = phaseToStageIndex(phase);
@@ -482,6 +485,14 @@ export function Five9AIPanel() {
             </div>
           )}
         </div>
+      )}
+
+      {/* ── AGENT ASSIST PANELS (Use Case Driven) ── */}
+      {useCaseProfile && session && activeStageIdx >= 2 && (
+        <AgentAssistPanels
+          profile={useCaseProfile}
+          currentWorkflowStep={Math.min(activeStageIdx, useCaseProfile.workflowSteps.length - 1)}
+        />
       )}
 
       {/* ── Modals ── */}

@@ -10,6 +10,7 @@ import { Five9SupervisorView } from "./Five9SupervisorView";
 import { Five9EmailView } from "./Five9EmailView";
 import { Five9ChatView } from "./Five9ChatView";
 import { Five9HistoryView } from "./Five9HistoryView";
+import { DEFAULT_USE_CASE_ID } from "./useCaseProfiles";
 
 export type Five9Tab = "agent" | "supervisor";
 export type Five9SidebarTab = "calls" | "email" | "chat" | "history" | "supervisor";
@@ -17,6 +18,7 @@ export type Five9SidebarTab = "calls" | "email" | "chat" | "history" | "supervis
 export function Five9Layout() {
   const [activeTab, setActiveTab] = useState<Five9Tab>("agent");
   const [sidebarTab, setSidebarTab] = useState<Five9SidebarTab>("calls");
+  const [selectedUseCaseId, setSelectedUseCaseId] = useState(DEFAULT_USE_CASE_ID);
 
   const handleSidebarTab = (tab: Five9SidebarTab) => {
     setSidebarTab(tab);
@@ -49,7 +51,7 @@ export function Five9Layout() {
               <LiveCallSimulation />
             </div>
             <div className="col-span-4 overflow-y-auto">
-              <Five9AIPanel />
+              <Five9AIPanel selectedUseCaseId={selectedUseCaseId} />
             </div>
           </div>
         );
@@ -58,7 +60,12 @@ export function Five9Layout() {
 
   return (
     <div className="min-h-screen flex flex-col five9-bg">
-      <Five9Header activeTab={activeTab} setActiveTab={setActiveTab} />
+      <Five9Header
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        selectedUseCaseId={selectedUseCaseId}
+        setSelectedUseCaseId={setSelectedUseCaseId}
+      />
       <div className="flex flex-1 overflow-hidden">
         <Five9Sidebar activeTab={sidebarTab} setActiveTab={handleSidebarTab} />
         <div className="flex-1 overflow-hidden">
