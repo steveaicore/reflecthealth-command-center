@@ -1,17 +1,20 @@
 import { useState, useEffect } from "react";
 import { Circle, ChevronDown, Monitor, Download } from "lucide-react";
 import { useDashboard } from "@/contexts/DashboardContext";
-import { useAudioEngine } from "@/contexts/AudioEngineContext";
 import { ExportSummary } from "../ExportSummary";
+import { UseCaseSelector } from "./UseCaseSelector";
+import { logAuditEvent, AUDIT_EVENTS } from "./auditLogger";
 import penguinLogo from "@/assets/penguin-icon.png";
 import type { Five9Tab } from "./Five9Layout";
 
 interface Five9HeaderProps {
   activeTab: Five9Tab;
   setActiveTab: (t: Five9Tab) => void;
+  selectedUseCaseId: string;
+  setSelectedUseCaseId: (id: string) => void;
 }
 
-export function Five9Header({ activeTab, setActiveTab }: Five9HeaderProps) { // audio-engine-fix
+export function Five9Header({ activeTab, setActiveTab, selectedUseCaseId, setSelectedUseCaseId }: Five9HeaderProps) {
   const { setDeploymentMode } = useDashboard();
   
   const [elapsed, setElapsed] = useState(0);
@@ -26,6 +29,12 @@ export function Five9Header({ activeTab, setActiveTab }: Five9HeaderProps) { // 
     const m = Math.floor(s / 60);
     const sec = s % 60;
     return `${m.toString().padStart(2, "0")}:${sec.toString().padStart(2, "0")}`;
+  };
+
+  const handleUseCaseChange = (newId: string) => {
+    const prevId = selectedUseCaseId;
+    setSelectedUseCaseId(newId);
+    logAuditEvent(AUDIT_EVENTS.USE_CASE_CHANGED, newId, undefined, { previousUseCaseId: prevId, newUseCaseId: newId });
   };
 
   return (
@@ -58,6 +67,12 @@ export function Five9Header({ activeTab, setActiveTab }: Five9HeaderProps) { // 
       </div>
 
       <div className="flex items-center gap-4">
+        {/* Medicare Use Case Selector */}
+        <div className="relative flex items-center gap-1.5">
+          <span className="text-[9px] text-white/40 uppercase tracking-wider hidden xl:inline">Use Case</span>
+          <UseCaseSelector selectedId={selectedUseCaseId} onSelect={handleUseCaseChange} />
+        </div>
+        <div className="h-4 w-px bg-white/20" />
         <button
           onClick={() => setExportOpen(true)}
           className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded bg-white/10 text-white/70 hover:bg-white/20 hover:text-white transition-colors"
