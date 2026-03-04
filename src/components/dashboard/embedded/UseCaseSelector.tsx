@@ -36,7 +36,7 @@ export function UseCaseSelector({ selectedId, onSelect, productLineId }: UseCase
   return (
     <div className="flex items-center gap-1.5">
       <Select value={selectedId} onValueChange={handleChange}>
-        <SelectTrigger className="h-6 w-[140px] text-[10px] bg-white/10 border-white/20 text-white/90 focus:ring-0 focus:ring-offset-0 [&>span]:text-[10px]">
+        <SelectTrigger className="h-7 w-[150px] text-[10px] bg-white/10 border-white/20 text-white/90 focus:ring-0 focus:ring-offset-0 [&>span]:text-[10px] [&>span]:truncate">
           <SelectValue placeholder="Use Case" />
         </SelectTrigger>
         <SelectContent className="max-h-[400px] w-[320px]">

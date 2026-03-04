@@ -29,7 +29,7 @@ export function ProductLineSelector({ selectedId, onSelect, orgTypeId }: Product
 
   return (
     <Select value={selectedId} onValueChange={handleChange}>
-      <SelectTrigger className="h-6 w-[120px] text-[10px] bg-white/10 border-white/20 text-white/90 focus:ring-0 focus:ring-offset-0 [&>span]:text-[10px]">
+      <SelectTrigger className="h-7 w-[130px] text-[10px] bg-white/10 border-white/20 text-white/90 focus:ring-0 focus:ring-offset-0 [&>span]:text-[10px] [&>span]:truncate">
         <SelectValue placeholder="Product Line" />
       </SelectTrigger>
       <SelectContent className="max-h-[400px] w-[320px]">
