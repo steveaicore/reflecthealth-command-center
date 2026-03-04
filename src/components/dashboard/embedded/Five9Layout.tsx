@@ -11,7 +11,8 @@ import { Five9EmailView } from "./Five9EmailView";
 import { Five9ChatView } from "./Five9ChatView";
 import { Five9HistoryView } from "./Five9HistoryView";
 import { DEFAULT_USE_CASE_ID, USE_CASE_PROFILES } from "./useCaseProfiles";
-import { DEFAULT_PRODUCT_LINE_ID } from "./productLines";
+import { DEFAULT_PRODUCT_LINE_ID, PRODUCT_LINES } from "./productLines";
+import { DEFAULT_ORG_TYPE_ID, getProductLinesForOrgType } from "./orgTypeProfiles";
 import { getUseCasesForProductLine } from "./useCasesByProductLine";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -23,6 +24,7 @@ export function Five9Layout() {
   const [sidebarTab, setSidebarTab] = useState<Five9SidebarTab>("calls");
   const [selectedUseCaseId, setSelectedUseCaseId] = useState(DEFAULT_USE_CASE_ID);
   const [selectedProductLineId, setSelectedProductLineId] = useState(DEFAULT_PRODUCT_LINE_ID);
+  const [selectedOrgTypeId, setSelectedOrgTypeId] = useState(DEFAULT_ORG_TYPE_ID);
 
   // Load persisted preferences
   useEffect(() => {
@@ -33,31 +35,51 @@ export function Five9Layout() {
           if ((data as any).default_product_line_id) {
             setSelectedProductLineId((data as any).default_product_line_id);
           }
+          if ((data as any).default_org_type_id) {
+            setSelectedOrgTypeId((data as any).default_org_type_id);
+          }
         }
       });
   }, []);
 
   // Persist preferences
-  const persistPrefs = useCallback((useCaseId: string, productLineId: string) => {
+  const persistPrefs = useCallback((useCaseId: string, productLineId: string, orgTypeId: string) => {
     supabase.from("agent_preferences").upsert({
       agent_user_id: "demo-agent",
       default_use_case_id: useCaseId,
       default_product_line_id: productLineId,
+      default_org_type_id: orgTypeId,
     } as any, { onConflict: "agent_user_id" }).then(() => {});
   }, []);
 
+  const handleOrgTypeChange = (newId: string) => {
+    setSelectedOrgTypeId(newId);
+    // Check if current product line is allowed for new org type
+    const allIds = PRODUCT_LINES.map(p => p.id);
+    const allowedIds = getProductLinesForOrgType(newId, allIds);
+    let newProductLine = selectedProductLineId;
+    if (!allowedIds.includes(selectedProductLineId)) {
+      newProductLine = allowedIds[0] || DEFAULT_PRODUCT_LINE_ID;
+      setSelectedProductLineId(newProductLine);
+    }
+    // Reset use case
+    const cases = getUseCasesForProductLine(newProductLine, USE_CASE_PROFILES);
+    const firstId = cases[0]?.id || DEFAULT_USE_CASE_ID;
+    setSelectedUseCaseId(firstId);
+    persistPrefs(firstId, newProductLine, newId);
+  };
+
   const handleProductLineChange = (newId: string) => {
     setSelectedProductLineId(newId);
-    // Reset use case to first available for new product line
     const cases = getUseCasesForProductLine(newId, USE_CASE_PROFILES);
     const firstId = cases[0]?.id || DEFAULT_USE_CASE_ID;
     setSelectedUseCaseId(firstId);
-    persistPrefs(firstId, newId);
+    persistPrefs(firstId, newId, selectedOrgTypeId);
   };
 
   const handleUseCaseChange = (newId: string) => {
     setSelectedUseCaseId(newId);
-    persistPrefs(newId, selectedProductLineId);
+    persistPrefs(newId, selectedProductLineId, selectedOrgTypeId);
   };
 
   const handleSidebarTab = (tab: Five9SidebarTab) => {
@@ -107,6 +129,8 @@ export function Five9Layout() {
         setSelectedUseCaseId={handleUseCaseChange}
         selectedProductLineId={selectedProductLineId}
         setSelectedProductLineId={handleProductLineChange}
+        selectedOrgTypeId={selectedOrgTypeId}
+        setSelectedOrgTypeId={handleOrgTypeChange}
       />
       <div className="flex flex-1 overflow-hidden">
         <Five9Sidebar activeTab={sidebarTab} setActiveTab={handleSidebarTab} />

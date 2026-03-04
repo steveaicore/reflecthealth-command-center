@@ -8,7 +8,8 @@ import { AudioControlPanel } from "./AudioControlPanel";
 import penguinLogo from "@/assets/penguin-logo.png";
 
 const CALLER_VOICE = "EXAVITQu4vr4xnSDxMaL";
-const AI_VOICE = "onwK4e9ZLuTAKqWW03F9";
+// Filipino-accented voice for BPO call rep realism
+const AI_VOICE = "P1hTNpVDMG973fukK9V2";
 
 // ── Random data generators ──
 const PROVIDER_NAMES = ["Northgate Orthopedic", "Lakeside Medical Group", "Summit Health Partners", "Valley Cardiology Associates", "Coastal Family Medicine", "Heritage Internal Medicine"];
