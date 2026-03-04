@@ -110,7 +110,7 @@ export function Five9Layout() {
               <Five9AgentPanel />
             </div>
             <div className="col-span-5 border-r five9-border overflow-y-auto">
-              <LiveCallSimulation />
+              <LiveCallSimulation selectedUseCaseId={selectedUseCaseId} selectedProductLineId={selectedProductLineId} />
             </div>
             <div className="col-span-4 overflow-y-auto">
               <Five9AIPanel selectedUseCaseId={selectedUseCaseId} selectedProductLineId={selectedProductLineId} />
