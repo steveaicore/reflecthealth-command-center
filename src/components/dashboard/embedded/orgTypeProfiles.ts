@@ -96,7 +96,7 @@ export const ORG_TYPE_PROFILES: OrgTypeProfile[] = [
     handoffTargets: ["Clinical Pharmacist", "UM Nurse", "Formulary Exception Team"],
     complianceMode: ["HIPAA identity verification", "Call recording disclosure", "Prescriber verification"],
     toolingIntegrations: ["PBM Platform", "Formulary DB", "Clinical Review Queue", "EDI Intake"],
-    allowedProductLines: ["commercial", "medicare", "medicaid", "wc-pbm", "group-benefits"],
+    allowedProductLines: ["pharmacy-benefit", "medicare-part-d", "medicaid-rx", "commercial", "medicare", "medicaid", "wc-pbm", "group-benefits"],
     authorityModel: "DELEGATED_AUTHORITY",
   },
 ];

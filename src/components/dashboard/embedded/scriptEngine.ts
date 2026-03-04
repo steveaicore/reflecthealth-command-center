@@ -436,12 +436,228 @@ export function buildReflectHealthEscalation(): ScenarioScript {
   };
 }
 
+// ── PBM Seeded Scenarios ──
+
+export function buildPbmFormularyCheck(): ScenarioScript {
+  const config: ScenarioConfig = {
+    requires_phi_verification: true, phi_required_count: 3,
+    allow_limited_info_mode: true, warm_transfer_enabled: true,
+    warm_transfer_target: "PA Review Team", recording_disclosure_required: true,
+    call_outcome_sla: "Immediate",
+  };
+  return {
+    scenarioId: "pbm-formulary-001", useCaseId: "pbm-formulary",
+    name: "Formulary & Coverage Check — Member",
+    blocks: [
+      blockA(config), blockB(config),
+      blockC("checking formulary coverage for a medication"),
+      blockD(["Drug Name", "Strength", "Dosage Form", "Preferred Pharmacy", "Plan Type"],
+        ["What medication are you checking?", "What strength and form?", "Which pharmacy do you prefer?", "Are you on a commercial or Medicare plan?"]),
+      blockE([{ label: "Run Coverage Check", type: "lookup" }, { label: "Check Alternatives", type: "lookup" }]),
+      blockF("This medication is on Tier 2 of your formulary. Your estimated copay is $25 for a 30-day supply at a preferred pharmacy. No prior authorization is required, but there is a quantity limit of 30 tablets per fill."),
+      blockG(["Coverage confirmed — no action needed", "PA required — initiate PA intake", "Warm transfer to PA team"]),
+      blockH("PA Review Team", { summary: "Member formulary check — PA required for requested drug", recommendedNextStep: "Initiate PA with clinical documentation", priority: "routine" }),
+      blockI(),
+    ],
+    escalationRules: [
+      { trigger: "PA required for requested medication", target: "PA Review Team", priority: "routine" },
+      { trigger: "Non-formulary drug with no alternatives", target: "Clinical Pharmacist", priority: "urgent" },
+    ],
+    resolutionOutcomes: ["resolved_on_call", "resolved_warm_transfer"],
+    transferPacketTemplate: { summary: "Formulary check — PA needed", recommendedNextStep: "Collect clinical info and submit PA", priority: "routine" },
+    wrapUpDispositionOptions: ["Resolved", "PA Initiated", "Warm Transfer", "Callback Scheduled"],
+    config,
+  };
+}
+
+export function buildPbmRejectTroubleshoot(): ScenarioScript {
+  const config: ScenarioConfig = {
+    requires_phi_verification: true, phi_required_count: 3,
+    allow_limited_info_mode: false, warm_transfer_enabled: true,
+    warm_transfer_target: "Pharmacy Help Desk", recording_disclosure_required: true,
+    call_outcome_sla: "Immediate",
+  };
+  return {
+    scenarioId: "pbm-reject-001", useCaseId: "pbm-reject",
+    name: "Pharmacy Claim Rejection — Pharmacy Call",
+    blocks: [
+      blockA(config),
+      { blockId: "B", title: "Pharmacy Verification",
+        agentSay: "For verification, may I have your pharmacy NABP/NCPDP number, the patient's date of birth, and their member ID?",
+        callerExpected: "Pharmacy provides NABP + patient DOB + member ID",
+        dataToCapture: ["Pharmacy NABP/NCPDP", "Patient DOB", "Member ID"],
+        actions: [{ label: "Verify Pharmacy", type: "verify" }],
+        completionCriteria: "Pharmacy and patient identity verified" },
+      blockC("a pharmacy claim rejection"),
+      blockD(["Reject Code", "NDC", "Days Supply", "BIN/PCN/Group", "Prescriber NPI"],
+        ["What reject code are you seeing?", "What NDC was submitted?", "What days supply?", "What BIN/PCN/Group?", "Prescriber NPI?"]),
+      blockE([{ label: "Diagnose Reject", type: "lookup" }, { label: "Suggest Fix", type: "resolve" }]),
+      blockF("The reject code 75 indicates prior authorization is required for this NDC. The prescriber can submit a PA request, or I can initiate the intake now if you have the clinical information available."),
+      blockG(["Reject resolved — resubmit guidance provided", "PA initiated for prescriber", "Override applied", "Warm transfer to help desk"]),
+      blockH("Pharmacy Help Desk", { summary: "Pharmacy reject — cannot resolve with standard troubleshooting", recommendedNextStep: "Specialized reject resolution", priority: "routine" }),
+      blockI(),
+    ],
+    escalationRules: [
+      { trigger: "Reject code not in standard resolution table", target: "Pharmacy Help Desk", priority: "routine" },
+      { trigger: "Pharmacy reports patient safety concern", target: "Clinical Pharmacist", priority: "expedited" },
+    ],
+    resolutionOutcomes: ["resolved_on_call", "resolved_warm_transfer", "resolved_docs_requested"],
+    transferPacketTemplate: { summary: "Pharmacy reject — needs specialized resolution", recommendedNextStep: "Review reject code and member eligibility", priority: "routine" },
+    wrapUpDispositionOptions: ["Resolved", "Resubmit Guidance Given", "PA Initiated", "Override Applied", "Warm Transfer", "Escalated"],
+    config,
+  };
+}
+
+export function buildPbmPaIntake(): ScenarioScript {
+  const config: ScenarioConfig = {
+    requires_phi_verification: true, phi_required_count: 3,
+    allow_limited_info_mode: false, warm_transfer_enabled: true,
+    warm_transfer_target: "Clinical Pharmacist / PA Nurse", recording_disclosure_required: true,
+    call_outcome_sla: "Standard: 72 hrs / Expedited: 24 hrs",
+  };
+  return {
+    scenarioId: "pbm-pa-001", useCaseId: "pbm-pa",
+    name: "Pharmacy PA Intake — Provider Office",
+    blocks: [
+      blockA(config),
+      { blockId: "B", title: "Provider Verification",
+        agentSay: "For verification, may I have the prescriber's NPI, the patient's date of birth, and their member ID?",
+        callerExpected: "Provider office provides NPI + patient DOB + member ID",
+        dataToCapture: ["Prescriber NPI", "Patient DOB", "Member ID"],
+        actions: [{ label: "Verify Provider", type: "verify" }],
+        completionCriteria: "Provider and patient identity verified" },
+      blockC("submitting a pharmacy prior authorization"),
+      blockD(["Drug Name", "NDC", "Diagnosis/ICD-10", "Prior Therapies Tried", "Contraindications", "Urgency"],
+        ["What medication requires PA?", "What is the diagnosis?", "What therapies were tried previously?", "Any contraindications?", "Is this standard or expedited?"]),
+      blockE([{ label: "Create PA Case", type: "resolve" }, { label: "Generate Doc Checklist", type: "request_docs" }]),
+      blockF("I've created a PA case. The reference number is RH-PA-2024-4821. For a standard review, the turnaround is 72 hours. I need the following clinical documentation: office notes, prior therapy records, and lab results if applicable."),
+      blockG(["PA case created — docs checklist provided", "Expedited — warm transfer to clinical pharmacist", "Complete submission — no further docs needed"]),
+      blockH("Clinical Pharmacist / PA Nurse", { summary: "Expedited pharmacy PA — clinical review needed", recommendedNextStep: "Clinical determination within 24 hours", priority: "expedited" }),
+      blockI(),
+    ],
+    escalationRules: [
+      { trigger: "Expedited request — urgent clinical need", target: "Clinical Pharmacist", priority: "expedited" },
+      { trigger: "Safety concern flagged during intake", target: "Clinical Pharmacist", priority: "expedited" },
+      { trigger: "Provider requests peer-to-peer", target: "Medical Director", priority: "urgent" },
+    ],
+    resolutionOutcomes: ["resolved_on_call", "resolved_docs_requested", "resolved_warm_transfer"],
+    transferPacketTemplate: { summary: "Pharmacy PA intake — expedited clinical review", recommendedNextStep: "Clinical determination", priority: "expedited" },
+    wrapUpDispositionOptions: ["PA Created", "Docs Requested", "Warm Transfer — Expedited", "Callback Scheduled"],
+    config,
+  };
+}
+
+export function buildPbmSpecialtyOnboarding(): ScenarioScript {
+  const config: ScenarioConfig = {
+    requires_phi_verification: true, phi_required_count: 3,
+    allow_limited_info_mode: true, warm_transfer_enabled: true,
+    warm_transfer_target: "Specialty Pharmacy Team", recording_disclosure_required: true,
+    call_outcome_sla: "5-7 business days for onboarding",
+  };
+  return {
+    scenarioId: "pbm-specialty-001", useCaseId: "pbm-specialty",
+    name: "Specialty Medication Onboarding — Member",
+    blocks: [
+      blockA(config), blockB(config),
+      blockC("starting a specialty medication"),
+      blockD(["Drug Name", "Prescriber Name/NPI", "Specialty Pharmacy Preference"],
+        ["What specialty medication has been prescribed?", "Who is the prescribing provider?", "Do you have a preferred specialty pharmacy?"]),
+      blockE([{ label: "Benefits Investigation", type: "lookup" }, { label: "Check PA Status", type: "lookup" }]),
+      blockF("Your plan covers this specialty medication. The PA has been approved. Your estimated out-of-pocket cost is $75 per fill with your copay card applied. I'm going to connect you with our specialty pharmacy team who will coordinate delivery, cold chain handling, and your first injection training."),
+      blockG(["Warm transfer to specialty pharmacy team"]),
+      blockH("Specialty Pharmacy Team", { summary: "New specialty Rx onboarding — PA approved, member ready for enrollment", recommendedNextStep: "Coordinate delivery schedule and patient education", priority: "routine" }),
+      blockI(),
+    ],
+    escalationRules: [
+      { trigger: "PA not yet approved — needs clinical review", target: "PA Review Team", priority: "urgent" },
+      { trigger: "Member has questions about side effects", target: "Clinical Pharmacist", priority: "routine" },
+    ],
+    resolutionOutcomes: ["resolved_warm_transfer"],
+    transferPacketTemplate: { summary: "Specialty onboarding — PA approved, ready for enrollment", recommendedNextStep: "Schedule delivery and patient education", priority: "routine" },
+    wrapUpDispositionOptions: ["Warm Transfer Completed", "Callback Scheduled"],
+    config,
+  };
+}
+
+export function buildPbmAppeals(): ScenarioScript {
+  const config: ScenarioConfig = {
+    requires_phi_verification: true, phi_required_count: 3,
+    allow_limited_info_mode: false, warm_transfer_enabled: true,
+    warm_transfer_target: "Appeals Team", recording_disclosure_required: true,
+    call_outcome_sla: "Standard: 30 days / Expedited: 72 hrs",
+  };
+  return {
+    scenarioId: "pbm-appeals-001", useCaseId: "pbm-appeals",
+    name: "Pharmacy Denial Appeal — Member/Provider",
+    blocks: [
+      blockA(config), blockB(config),
+      blockC("appealing a pharmacy denial"),
+      blockD(["Drug Name", "Denial Ref", "Denial Reason", "Supporting Clinical Rationale", "Appeal Type"],
+        ["What medication was denied?", "What is the denial reference?", "What was the denial reason?", "Do you have supporting clinical documentation?", "Standard or expedited appeal?"]),
+      blockE([{ label: "Generate Appeal Checklist", type: "request_docs" }, { label: "Generate Appeal Packet", type: "generate_packet" }]),
+      blockF("I've initiated your appeal. For a standard appeal, the review period is up to 30 days. You'll need to submit: the denial notice, clinical rationale from the prescriber, and any supporting lab results or medical records. I can provide the fax number and portal link."),
+      blockG(["Appeal initiated — docs checklist provided", "Expedited — warm transfer to appeals team", "Appeal packet generated and submitted"]),
+      blockH("Appeals Team", { summary: "Expedited pharmacy appeal — clinical urgency", recommendedNextStep: "Expedited review within 72 hours", priority: "expedited" }),
+      blockI(),
+    ],
+    escalationRules: [
+      { trigger: "Expedited appeal — delay risks health", target: "Appeals Team", priority: "expedited" },
+      { trigger: "Member requests external review", target: "Appeals Supervisor", priority: "urgent" },
+    ],
+    resolutionOutcomes: ["resolved_on_call", "resolved_docs_requested", "resolved_warm_transfer"],
+    transferPacketTemplate: { summary: "Pharmacy denial appeal — expedited", recommendedNextStep: "Expedited clinical review", priority: "expedited" },
+    wrapUpDispositionOptions: ["Appeal Initiated", "Docs Requested", "Warm Transfer — Expedited", "Appeal Packet Submitted"],
+    config,
+  };
+}
+
+export function buildPbmDurEscalation(): ScenarioScript {
+  const config: ScenarioConfig = {
+    requires_phi_verification: true, phi_required_count: 3,
+    allow_limited_info_mode: false, warm_transfer_enabled: true,
+    warm_transfer_target: "Clinical Pharmacist", recording_disclosure_required: true,
+    call_outcome_sla: "Immediate",
+  };
+  return {
+    scenarioId: "pbm-dur-001", useCaseId: "pbm-dur",
+    name: "DUR / Safety Alert — Immediate Clinical Handoff",
+    blocks: [
+      blockA(config), blockB(config),
+      blockC("a drug safety alert"),
+      blockD(["Drug Interaction/Alert", "Symptoms", "Urgency", "Dispensing Pharmacy NABP"],
+        ["What interaction or alert was flagged?", "Is the patient experiencing symptoms?", "How urgent is this?", "Which pharmacy is involved?"]),
+      { blockId: "E-emergency", title: "Emergency Screening",
+        agentSay: "If you or the patient are experiencing a medical emergency, please hang up and call 911 immediately. Otherwise, I'm going to connect you with a clinical pharmacist right away.",
+        dataToCapture: [], actions: [], completionCriteria: "Emergency status confirmed — not 911" },
+      blockE([]),
+      blockF("I've documented the safety alert. This requires immediate clinical pharmacist review. I'm connecting you now."),
+      blockG(["Immediate warm transfer to clinical pharmacist"]),
+      blockH("Clinical Pharmacist", { summary: "DUR safety alert — immediate clinical review required", recommendedNextStep: "Clinical assessment of drug interaction/safety concern", priority: "expedited" }),
+      blockI(),
+    ],
+    escalationRules: [
+      { trigger: "Any DUR/safety alert", target: "Clinical Pharmacist", priority: "expedited" },
+      { trigger: "Patient experiencing adverse symptoms", target: "Clinical Pharmacist", priority: "expedited" },
+    ],
+    resolutionOutcomes: ["resolved_warm_transfer"],
+    transferPacketTemplate: { summary: "DUR safety alert — immediate pharmacist review", recommendedNextStep: "Clinical assessment", priority: "expedited" },
+    wrapUpDispositionOptions: ["Warm Transfer Completed — Clinical Pharmacist"],
+    config,
+  };
+}
+
 // ── Get all seeded scenarios ──
 export function getSeededScenarios(): ScenarioScript[] {
   return [
     buildReflectHealthEligibility(),
     buildReflectHealthPriorAuth(),
     buildReflectHealthEscalation(),
+    buildPbmFormularyCheck(),
+    buildPbmRejectTroubleshoot(),
+    buildPbmPaIntake(),
+    buildPbmSpecialtyOnboarding(),
+    buildPbmAppeals(),
+    buildPbmDurEscalation(),
   ];
 }
 
