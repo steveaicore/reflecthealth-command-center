@@ -123,11 +123,11 @@ function buildProviderTemplates(npi: string, provName: string, memberId: string,
 }
 
 // ── Edge case script builders ──
-function buildWrongNpiScript(npi: string, provName: string, memberId: string, dob: string, retrySucceeds: boolean): CallTemplate {
+function buildWrongNpiScript(npi: string, provName: string, memberId: string, dob: string, retrySucceeds: boolean, useCaseName = "Benefits Verification"): CallTemplate {
   const wrongNpi = "1999999999";
   const correctNpi = npi;
   const script: CallTemplate["script"] = [
-    { speaker: "caller", text: `This is ${provName} calling to verify benefits.`, phase: "awaiting" },
+    { speaker: "caller", text: `This is ${provName} calling regarding ${useCaseName.toLowerCase()}.`, phase: "awaiting" },
     { speaker: "ai", text: "Thank you. Can I have your NPI number please?" },
     { speaker: "caller", text: `NPI ${wrongNpi}.`, phase: "provider-verifying" },
     { speaker: "ai", text: "I'm unable to verify that NPI. Could you please repeat or confirm the number?", phase: "provider-failed" },
@@ -146,17 +146,17 @@ function buildWrongNpiScript(npi: string, provName: string, memberId: string, do
     );
   }
   return {
-    intent: "Benefits Verification",
+    intent: useCaseName,
     callerType: "Provider",
     confidenceRange: retrySucceeds ? [82, 88] : [68, 76],
     script,
   };
 }
 
-function buildInvalidMemberScript(npi: string, provName: string, memberId: string, retrySucceeds: boolean): CallTemplate {
+function buildInvalidMemberScript(npi: string, provName: string, memberId: string, retrySucceeds: boolean, useCaseName = "Eligibility Verification"): CallTemplate {
   const wrongMember = "XXX-0000000";
   const script: CallTemplate["script"] = [
-    { speaker: "caller", text: `This is ${provName} calling about a patient.`, phase: "awaiting" },
+    { speaker: "caller", text: `This is ${provName} calling regarding ${useCaseName.toLowerCase()}.`, phase: "awaiting" },
     { speaker: "ai", text: "May I have your NPI number?" },
     { speaker: "caller", text: `NPI ${npi}.`, phase: "provider-verifying" },
     { speaker: "ai", text: `Provider verified. Please provide the member ID.`, phase: "provider-verified" },
@@ -175,17 +175,17 @@ function buildInvalidMemberScript(npi: string, provName: string, memberId: strin
     );
   }
   return {
-    intent: "Eligibility Verification",
+    intent: useCaseName,
     callerType: "Provider",
     confidenceRange: retrySucceeds ? [80, 86] : [65, 74],
     script,
   };
 }
 
-function buildDobMismatchScript(npi: string, provName: string, memberId: string, dob: string, retrySucceeds: boolean): CallTemplate {
+function buildDobMismatchScript(npi: string, provName: string, memberId: string, dob: string, retrySucceeds: boolean, useCaseName = "Benefits Verification"): CallTemplate {
   const wrongDob = "06/15/1990";
   const script: CallTemplate["script"] = [
-    { speaker: "caller", text: `Calling to verify benefits for a patient.`, phase: "awaiting" },
+    { speaker: "caller", text: `Calling regarding ${useCaseName.toLowerCase()}.`, phase: "awaiting" },
     { speaker: "ai", text: "May I have your NPI?" },
     { speaker: "caller", text: `NPI ${npi}.`, phase: "provider-verifying" },
     { speaker: "ai", text: `Provider verified. Please provide the member ID.`, phase: "provider-verified" },
@@ -204,7 +204,7 @@ function buildDobMismatchScript(npi: string, provName: string, memberId: string,
     );
   }
   return {
-    intent: "Benefits Verification",
+    intent: useCaseName,
     callerType: "Provider",
     confidenceRange: retrySucceeds ? [82, 87] : [70, 78],
     script,
@@ -228,18 +228,18 @@ function buildClaimNotFoundScript(npi: string, provName: string, memberId: strin
   };
 }
 
-function buildApiTimeoutScript(npi: string, provName: string, memberId: string, dob: string, retrySucceeds: boolean): CallTemplate {
+function buildApiTimeoutScript(npi: string, provName: string, memberId: string, dob: string, retrySucceeds: boolean, useCaseName = "Eligibility Verification"): CallTemplate {
   const script: CallTemplate["script"] = [
-    { speaker: "caller", text: `This is ${provName} calling to check eligibility.`, phase: "awaiting" },
+    { speaker: "caller", text: `This is ${provName} calling regarding ${useCaseName.toLowerCase()}.`, phase: "awaiting" },
     { speaker: "ai", text: "May I have your NPI?" },
     { speaker: "caller", text: `NPI ${npi}.`, phase: "provider-verifying" },
     { speaker: "ai", text: `Provider verified. Please provide the member ID.`, phase: "provider-verified" },
     { speaker: "caller", text: `Member ${memberId}.`, phase: "member-verifying" },
-    { speaker: "ai", text: "Member verified. Let me retrieve the eligibility details.", phase: "data-timeout" },
+    { speaker: "ai", text: "Member verified. Let me retrieve the details.", phase: "data-timeout" },
   ];
   if (retrySucceeds) {
     script.push(
-      { speaker: "ai", text: "System is back online. Eligibility confirmed. Coverage is active.", phase: "response-ready" },
+      { speaker: "ai", text: "System is back online. Information retrieved successfully.", phase: "response-ready" },
     );
   } else {
     script.push(
@@ -247,7 +247,7 @@ function buildApiTimeoutScript(npi: string, provName: string, memberId: string, 
     );
   }
   return {
-    intent: "Eligibility Verification",
+    intent: useCaseName,
     callerType: "Provider",
     confidenceRange: retrySucceeds ? [80, 86] : [68, 75],
     script,
@@ -594,14 +594,15 @@ function buildDynamicMemberTemplate(uc: UseCaseProfile, memberId: string): CallT
 }
 
 function pickDynamicTemplate(uc: UseCaseProfile, npi: string, provName: string, memberId: string, dob: string, edgeCase: EdgeCaseType): CallTemplate {
+  const ucName = uc.name;
   if (edgeCase !== "none") {
     const retrySucceeds = Math.random() < 0.6;
     switch (edgeCase) {
-      case "wrong_npi": return buildWrongNpiScript(npi, provName, memberId, dob, retrySucceeds);
-      case "invalid_member_id": return buildInvalidMemberScript(npi, provName, memberId, retrySucceeds);
-      case "dob_mismatch": return buildDobMismatchScript(npi, provName, memberId, dob, retrySucceeds);
+      case "wrong_npi": return buildWrongNpiScript(npi, provName, memberId, dob, retrySucceeds, ucName);
+      case "invalid_member_id": return buildInvalidMemberScript(npi, provName, memberId, retrySucceeds, ucName);
+      case "dob_mismatch": return buildDobMismatchScript(npi, provName, memberId, dob, retrySucceeds, ucName);
       case "claim_not_found": return buildClaimNotFoundScript(npi, provName, memberId);
-      case "api_timeout": return buildApiTimeoutScript(npi, provName, memberId, dob, retrySucceeds);
+      case "api_timeout": return buildApiTimeoutScript(npi, provName, memberId, dob, retrySucceeds, ucName);
     }
   }
 
