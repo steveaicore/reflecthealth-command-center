@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { type UseCaseProfile } from "./useCaseProfiles";
+import { getScenarioForUseCase } from "./scriptEngine";
+import { ScriptGuidedPanel } from "./ScriptGuidedPanel";
 import {
   CheckCircle2, Copy, ArrowRight, FileText, Shield, Sparkles, BarChart3,
   AlertTriangle, ChevronDown, ChevronUp, Zap
@@ -237,9 +239,13 @@ export function KPIImpactPanel({ profile }: PanelProps) {
 
 /* ── Combined Agent Assist Panel ── */
 export function AgentAssistPanels({ profile, currentWorkflowStep }: { profile: UseCaseProfile; currentWorkflowStep: number }) {
-  const [expandedPanel, setExpandedPanel] = useState<string | null>(null);
+  const [expandedPanel, setExpandedPanel] = useState<string | null>("script-guide");
+
+  // Try to load a seeded end-to-end scenario for this use case
+  const scenario = getScenarioForUseCase(profile.id);
 
   const panels = [
+    ...(scenario ? [{ id: "script-guide", label: "📋 Script Guide", component: <ScriptGuidedPanel scenario={scenario} /> }] : []),
     { id: "actions", label: "Actions", component: <RecommendedActionsPanel profile={profile} /> },
     { id: "policy", label: "Policy", component: <PolicySnippetsPanel profile={profile} /> },
     { id: "script", label: "Script", component: <ScriptCompliancePanel profile={profile} /> },
@@ -282,11 +288,15 @@ export function AgentAssistPanels({ profile, currentWorkflowStep }: { profile: U
       ) : expandedPanel ? (
         panels.find(p => p.id === expandedPanel)?.component
       ) : (
-        /* Default: show workflow + actions */
-        <>
-          <WorkflowTimelinePanel profile={profile} currentStep={currentWorkflowStep} />
-          <RecommendedActionsPanel profile={profile} />
-        </>
+        /* Default: show script guide if available, else workflow + actions */
+        scenario ? (
+          <ScriptGuidedPanel scenario={scenario} />
+        ) : (
+          <>
+            <WorkflowTimelinePanel profile={profile} currentStep={currentWorkflowStep} />
+            <RecommendedActionsPanel profile={profile} />
+          </>
+        )
       )}
     </div>
   );
