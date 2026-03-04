@@ -17,18 +17,21 @@ export type Database = {
       agent_preferences: {
         Row: {
           agent_user_id: string
+          default_product_line_id: string
           default_use_case_id: string
           id: string
           updated_at: string
         }
         Insert: {
           agent_user_id: string
+          default_product_line_id?: string
           default_use_case_id?: string
           id?: string
           updated_at?: string
         }
         Update: {
           agent_user_id?: string
+          default_product_line_id?: string
           default_use_case_id?: string
           id?: string
           updated_at?: string
@@ -44,6 +47,8 @@ export type Database = {
           hash_prev: string | null
           id: string
           payload: Json | null
+          product_line_id: string | null
+          scenario_id: string | null
           timestamp: string
           use_case_id: string | null
         }
@@ -55,6 +60,8 @@ export type Database = {
           hash_prev?: string | null
           id?: string
           payload?: Json | null
+          product_line_id?: string | null
+          scenario_id?: string | null
           timestamp?: string
           use_case_id?: string | null
         }
@@ -66,6 +73,8 @@ export type Database = {
           hash_prev?: string | null
           id?: string
           payload?: Json | null
+          product_line_id?: string | null
+          scenario_id?: string | null
           timestamp?: string
           use_case_id?: string | null
         }

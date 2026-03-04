@@ -3,6 +3,7 @@ import { Circle, ChevronDown, Monitor, Download } from "lucide-react";
 import { useDashboard } from "@/contexts/DashboardContext";
 import { ExportSummary } from "../ExportSummary";
 import { UseCaseSelector } from "./UseCaseSelector";
+import { ProductLineSelector } from "./ProductLineSelector";
 import { logAuditEvent, AUDIT_EVENTS } from "./auditLogger";
 import penguinLogo from "@/assets/penguin-icon.png";
 import type { Five9Tab } from "./Five9Layout";
@@ -12,9 +13,11 @@ interface Five9HeaderProps {
   setActiveTab: (t: Five9Tab) => void;
   selectedUseCaseId: string;
   setSelectedUseCaseId: (id: string) => void;
+  selectedProductLineId: string;
+  setSelectedProductLineId: (id: string) => void;
 }
 
-export function Five9Header({ activeTab, setActiveTab, selectedUseCaseId, setSelectedUseCaseId }: Five9HeaderProps) {
+export function Five9Header({ activeTab, setActiveTab, selectedUseCaseId, setSelectedUseCaseId, selectedProductLineId, setSelectedProductLineId }: Five9HeaderProps) {
   const { setDeploymentMode } = useDashboard();
   
   const [elapsed, setElapsed] = useState(0);
@@ -34,7 +37,7 @@ export function Five9Header({ activeTab, setActiveTab, selectedUseCaseId, setSel
   const handleUseCaseChange = (newId: string) => {
     const prevId = selectedUseCaseId;
     setSelectedUseCaseId(newId);
-    logAuditEvent(AUDIT_EVENTS.USE_CASE_CHANGED, newId, undefined, { previousUseCaseId: prevId, newUseCaseId: newId });
+    logAuditEvent(AUDIT_EVENTS.USE_CASE_CHANGED, newId, undefined, { previousUseCaseId: prevId, newUseCaseId: newId, productLineId: selectedProductLineId });
   };
 
   return (
@@ -66,11 +69,17 @@ export function Five9Header({ activeTab, setActiveTab, selectedUseCaseId, setSel
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
-        {/* Medicare Use Case Selector */}
+      <div className="flex items-center gap-3">
+        {/* Product Line Selector */}
+        <div className="relative flex items-center gap-1.5">
+          <span className="text-[9px] text-white/40 uppercase tracking-wider hidden xl:inline">Product</span>
+          <ProductLineSelector selectedId={selectedProductLineId} onSelect={setSelectedProductLineId} />
+        </div>
+        <div className="h-4 w-px bg-white/20" />
+        {/* Use Case Selector */}
         <div className="relative flex items-center gap-1.5">
           <span className="text-[9px] text-white/40 uppercase tracking-wider hidden xl:inline">Use Case</span>
-          <UseCaseSelector selectedId={selectedUseCaseId} onSelect={handleUseCaseChange} />
+          <UseCaseSelector selectedId={selectedUseCaseId} onSelect={handleUseCaseChange} productLineId={selectedProductLineId} />
         </div>
         <div className="h-4 w-px bg-white/20" />
         <button
