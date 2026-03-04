@@ -702,22 +702,22 @@ export function LiveCallSimulation({ selectedUseCaseId, selectedProductLineId }:
     isRunningRef.current = false;
   }, [activeUseCase, confidenceThreshold, playTTS, setCurrentCallOutcome, setFive9Phase, setFive9Session, setLiveCallIntent]);
 
-  // Auto-advance
+  // Auto-advance — runs even when audio is muted
   useEffect(() => {
-    if (!isLiveSimulation || !audioEnabled) return;
+    if (!isLiveSimulation) return;
     if (callStatus === "resolved" || callStatus === "escalated") {
       const timer = setTimeout(() => {
-        if (isLiveSimulation && audioEnabled) runCall();
+        if (isLiveSimulation) runCall();
       }, 1500);
       return () => clearTimeout(timer);
     }
     if (callStatus === "idle") {
       const timer = setTimeout(() => {
-        if (isLiveSimulation && audioEnabled) runCall();
+        if (isLiveSimulation) runCall();
       }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [callStatus, isLiveSimulation, audioEnabled, runCall]);
+  }, [callStatus, isLiveSimulation, runCall]);
 
   const handleToggle = () => {
     if (isLiveSimulation) {
