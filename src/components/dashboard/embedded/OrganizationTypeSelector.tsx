@@ -30,7 +30,7 @@ export function OrganizationTypeSelector({ selectedId, onSelect }: OrganizationT
   return (
     <div className="flex items-center gap-1.5 relative">
       <Select value={selectedId} onValueChange={handleChange}>
-        <SelectTrigger className="h-6 w-[100px] text-[10px] bg-white/10 border-white/20 text-white/90 focus:ring-0 focus:ring-offset-0 [&>span]:text-[10px]">
+        <SelectTrigger className="h-7 w-[130px] text-[10px] bg-white/10 border-white/20 text-white/90 focus:ring-0 focus:ring-offset-0 [&>span]:text-[10px] [&>span]:truncate">
           <SelectValue placeholder="Org Type" />
         </SelectTrigger>
         <SelectContent className="max-h-[400px] w-[340px]">
@@ -51,7 +51,7 @@ export function OrganizationTypeSelector({ selectedId, onSelect }: OrganizationT
         </SelectContent>
       </Select>
       {selected && (
-        <Badge variant="outline" className="h-4 px-1.5 text-[8px] font-medium border-white/20 text-white/60 hidden xl:flex">
+        <Badge variant="outline" className="h-5 px-1.5 text-[8px] font-medium border-white/20 text-white/60 hidden xl:flex whitespace-nowrap">
           {selected.authorityModel.replace(/_/g, " ")}
         </Badge>
       )}
