@@ -41,7 +41,7 @@ export function UseCaseSelector({ selectedId, onSelect, productLineId }: UseCase
         </SelectTrigger>
         <SelectContent className="max-h-[400px] w-[320px]">
           <div className="px-2 py-1.5 text-[9px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
-            {productLine ? `${productLine.shortName} Use Cases` : "Medicare Use Cases"}
+            {productLine ? `${productLine.shortName} Use Cases` : "Use Cases"}
           </div>
           {useCases.map((p) => (
             <SelectItem key={p.id} value={p.id} className="text-[11px] py-1.5">
