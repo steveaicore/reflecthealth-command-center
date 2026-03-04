@@ -9,6 +9,7 @@ import penguinLogo from "@/assets/penguin-logo.png";
 import { USE_CASE_PROFILES } from "./useCaseProfiles";
 import type { UseCaseProfile } from "./useCaseProfiles";
 import { getUseCasesForProductLine } from "./useCasesByProductLine";
+import { getEndingsForUseCase, selectEnding, type ResolutionEnding } from "./resolutionVarietyEngine";
 
 // Female Indian voice for caller (Priya – warm, professional)
 const CALLER_VOICE = "pFZP5JQG7iQjIQuC4Bku";
@@ -537,40 +538,57 @@ function pickTemplate(npi: string, provName: string, memberId: string, dob: stri
   }
 }
 
-// ── Dynamic template builder from use case profile ──
+// ── Dynamic template builder from use case profile with RVE ending variety ──
 function buildDynamicProviderTemplate(uc: UseCaseProfile, npi: string, provName: string, memberId: string, dob: string): CallTemplate {
   const s = uc.scriptTemplate;
-  return {
-    intent: uc.name,
-    callerType: "Provider",
-    confidenceRange: [90, 96],
-    script: [
-      { speaker: "caller", text: `This is ${provName} calling regarding ${uc.name.toLowerCase()}.`, phase: "awaiting" },
-      { speaker: "ai", text: "Thank you for calling. May I have your NPI number please?" },
-      { speaker: "caller", text: `NPI ${npi}.`, phase: "provider-verifying" },
-      { speaker: "ai", text: `Provider verified. ${provName}, NPI ${npi}. ${s.probingQuestions[0] || "How can I assist you?"}`, phase: "provider-verified" },
-      { speaker: "caller", text: `Member ID ${memberId}, date of birth ${dob}.`, phase: "member-verifying" },
-      { speaker: "ai", text: `Member verified. ${s.probingQuestions[1] || "Let me look that up for you."}`, phase: "member-verified" },
-      { speaker: "caller", text: `Yes, ${s.probingQuestions[2] ? "it's for " + s.probingQuestions[2].toLowerCase().replace("?", "") : "that's correct"}.`, phase: "intent-classifying" },
-      { speaker: "ai", text: s.compliancePhrasing[0]?.compliant || `I've processed your ${uc.shortName} request. All details have been confirmed.`, phase: "response-ready" },
+  const endings = getEndingsForUseCase(uc.id);
+  const ending = selectEnding(endings, "medium");
+  const isEscalation = ending.handoff_required || ending.disposition === "Escalated" || ending.disposition === "Warm Transfer";
+
+  const script: CallTemplate["script"] = [
+    { speaker: "caller", text: `This is ${provName} calling regarding ${uc.name.toLowerCase()}.`, phase: "awaiting" },
+    { speaker: "ai", text: "Thank you for calling. May I have your NPI number please?" },
+    { speaker: "caller", text: `NPI ${npi}.`, phase: "provider-verifying" },
+    { speaker: "ai", text: `Provider verified. ${provName}, NPI ${npi}. ${s.probingQuestions[0] || "How can I assist you?"}`, phase: "provider-verified" },
+    { speaker: "caller", text: `Member ID ${memberId}, date of birth ${dob}.`, phase: "member-verifying" },
+    { speaker: "ai", text: `Member verified. ${s.probingQuestions[1] || "Let me look that up for you."}`, phase: "member-verified" },
+    { speaker: "caller", text: `Yes, ${s.probingQuestions[2] ? "it's for " + s.probingQuestions[2].toLowerCase().replace("?", "") : "that's correct"}.`, phase: "intent-classifying" },
+    { speaker: "ai", text: ending.agent_script_patch.blockF, phase: "response-ready" },
+  ];
+
+  if (isEscalation) {
+    script.push({ speaker: "ai", text: `I'll connect you with our ${ending.agent_script_patch.blockH_target || "specialist team"} now. All call context has been transferred.`, phase: "escalation" });
+  } else {
+    script.push(
       { speaker: "ai", text: "Is there anything else I can help with today?" },
       { speaker: "caller", text: "No, that's all. Thank you." },
-      { speaker: "ai", text: "Thank you for calling. This has been completed and logged.", phase: "resolved" },
-    ],
+      { speaker: "ai", text: ending.agent_script_patch.blockI_recap.split(". ")[0] + ". Thank you for calling.", phase: "resolved" },
+    );
+  }
+
+  return {
+    intent: `${uc.name} — ${ending.label}`,
+    callerType: "Provider",
+    confidenceRange: ending.deflection_score >= 70 ? [90, 96] : ending.deflection_score >= 40 ? [78, 88] : [65, 78],
+    script,
   };
 }
 
 function buildDynamicMemberTemplate(uc: UseCaseProfile, memberId: string): CallTemplate {
   const s = uc.scriptTemplate;
+  const endings = getEndingsForUseCase(uc.id);
+  const highDefl = endings.filter(e => e.deflection_score >= 50);
+  const ending = selectEnding(highDefl.length > 0 ? highDefl : endings, "high");
+
   return {
-    intent: uc.name,
+    intent: `${uc.name} — ${ending.label}`,
     callerType: "Member",
-    confidenceRange: [90, 96],
+    confidenceRange: ending.deflection_score >= 70 ? [90, 96] : [80, 90],
     script: [
       { speaker: "caller", text: s.probingQuestions[0]?.replace("?", ".") || `I'd like help with ${uc.name.toLowerCase()}.`, phase: "awaiting" },
       { speaker: "ai", text: s.opening || "I'd be happy to help. Please provide your member ID." },
       { speaker: "caller", text: `It's ${memberId}.`, phase: "member-verifying" },
-      { speaker: "ai", text: `Member verified. ${s.compliancePhrasing[0]?.compliant || `Your ${uc.shortName} request has been processed.`}`, phase: "response-ready" },
+      { speaker: "ai", text: `Member verified. ${ending.agent_script_patch.blockF}`, phase: "response-ready" },
     ],
   };
 }
