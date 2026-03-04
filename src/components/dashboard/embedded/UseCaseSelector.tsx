@@ -1,22 +1,31 @@
 import { useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { USE_CASE_PROFILES, type UseCaseProfile } from "./useCaseProfiles";
-import { ChevronDown, Info } from "lucide-react";
+import { USE_CASE_PROFILES } from "./useCaseProfiles";
+import { getUseCasesForProductLine } from "./useCasesByProductLine";
+import { getProductLineById } from "./productLines";
+import { Info } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 interface UseCaseSelectorProps {
   selectedId: string;
   onSelect: (id: string) => void;
+  productLineId?: string;
 }
 
-export function UseCaseSelector({ selectedId, onSelect }: UseCaseSelectorProps) {
+export function UseCaseSelector({ selectedId, onSelect, productLineId }: UseCaseSelectorProps) {
   const [expandedInfo, setExpandedInfo] = useState(false);
-  const selected = USE_CASE_PROFILES.find(p => p.id === selectedId);
+
+  const useCases = productLineId
+    ? getUseCasesForProductLine(productLineId, USE_CASE_PROFILES)
+    : USE_CASE_PROFILES;
+
+  const selected = useCases.find(p => p.id === selectedId);
+  const productLine = productLineId ? getProductLineById(productLineId) : null;
 
   const handleChange = (newId: string) => {
     if (newId !== selectedId) {
       onSelect(newId);
-      const profile = USE_CASE_PROFILES.find(p => p.id === newId);
+      const profile = useCases.find(p => p.id === newId);
       toast({
         title: "Use case updated",
         description: `Scripts and actions refreshed for ${profile?.shortName || newId}.`,
@@ -30,15 +39,15 @@ export function UseCaseSelector({ selectedId, onSelect }: UseCaseSelectorProps) 
         <SelectTrigger className="h-6 w-[140px] text-[10px] bg-white/10 border-white/20 text-white/90 focus:ring-0 focus:ring-offset-0 [&>span]:text-[10px]">
           <SelectValue placeholder="Use Case" />
         </SelectTrigger>
-        <SelectContent className="max-h-[320px] w-[280px]">
+        <SelectContent className="max-h-[400px] w-[320px]">
           <div className="px-2 py-1.5 text-[9px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
-            Medicare Use Case
+            {productLine ? `${productLine.shortName} Use Cases` : "Medicare Use Cases"}
           </div>
-          {USE_CASE_PROFILES.map((p) => (
+          {useCases.map((p) => (
             <SelectItem key={p.id} value={p.id} className="text-[11px] py-1.5">
               <div>
                 <span className="font-medium">{p.shortName}</span>
-                <span className="text-muted-foreground ml-1.5 text-[9px]">{p.primaryGoal.slice(0, 40)}</span>
+                <span className="text-muted-foreground ml-1.5 text-[9px]">{p.primaryGoal.slice(0, 45)}</span>
               </div>
             </SelectItem>
           ))}

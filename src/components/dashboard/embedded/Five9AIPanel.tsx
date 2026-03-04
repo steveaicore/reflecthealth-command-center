@@ -4,7 +4,8 @@ import { useDashboard } from "@/contexts/DashboardContext";
 import { useAudioEngine, type Five9Phase } from "@/contexts/AudioEngineContext";
 import { DetailModal } from "../DetailModal";
 import { AgentAssistPanels } from "./AgentAssistPanels";
-import { getUseCaseById } from "./useCaseProfiles";
+import { getUseCaseById, USE_CASE_PROFILES } from "./useCaseProfiles";
+import { getUseCasesForProductLine } from "./useCasesByProductLine";
 import penguinAiLogo from "@/assets/penguin-ai-logo.png";
 import penguinLogo from "@/assets/penguin-logo.png";
 import {
@@ -65,7 +66,7 @@ function LatencyCounter({ target, isTimeout }: { target: number; isTimeout?: boo
   return <span>{value}ms</span>;
 }
 
-export function Five9AIPanel({ selectedUseCaseId }: { selectedUseCaseId: string }) {
+export function Five9AIPanel({ selectedUseCaseId, selectedProductLineId }: { selectedUseCaseId: string; selectedProductLineId?: string }) {
   const { pipeline } = useSimulation();
   const { callParams } = useDashboard();
   const { five9Phase, five9Session, liveCallIntent } = useAudioEngine();
@@ -73,7 +74,11 @@ export function Five9AIPanel({ selectedUseCaseId }: { selectedUseCaseId: string 
   const [complianceModalOpen, setComplianceModalOpen] = useState(false);
   const [systemActivityOpen, setSystemActivityOpen] = useState(false);
 
-  const useCaseProfile = getUseCaseById(selectedUseCaseId);
+  // Resolve use case from the correct product line
+  const productLineCases = selectedProductLineId
+    ? getUseCasesForProductLine(selectedProductLineId, USE_CASE_PROFILES)
+    : USE_CASE_PROFILES;
+  const useCaseProfile = productLineCases.find(p => p.id === selectedUseCaseId) || getUseCaseById(selectedUseCaseId);
   const session = five9Session;
   const phase = five9Phase;
   const activeStageIdx = phaseToStageIndex(phase);
