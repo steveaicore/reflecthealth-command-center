@@ -646,12 +646,111 @@ export function buildPbmDurEscalation(): ScenarioScript {
   };
 }
 
+// ── Reflect Health: Claim Without Claim Number ──
+
+export function buildReflectHealthClaimWithoutNumber(): ScenarioScript {
+  const config: ScenarioConfig = {
+    requires_phi_verification: true,
+    phi_required_count: 3,
+    allow_limited_info_mode: true,
+    warm_transfer_enabled: false,
+    recording_disclosure_required: true,
+    call_outcome_sla: "Immediate",
+  };
+
+  return {
+    scenarioId: "rh-claim-no-number-001",
+    useCaseId: "claims-status",
+    name: "Claim Status — No Claim Number (DOS + Billed Charges)",
+    blocks: [
+      blockA(config),
+      blockB(config),
+      blockC("checking the status of a claim without a claim number"),
+      blockD(
+        ["Member ID", "Date of Service", "Total Billed Charges", "Provider Name/NPI", "Service Description"],
+        ["May I have the member ID?", "What was the date of service?", "What was the total amount billed?", "Which provider rendered the service?", "Can you describe the service performed?"]
+      ),
+      blockE([
+        { label: "Search by DOS + Billed Amount", type: "lookup" },
+        { label: "Cross-Reference Provider", type: "lookup" },
+      ]),
+      blockF("I located the claim using the date of service and billed charges. Claim CLM-48291 for January 15th, billed at $4,350, was adjudicated on January 28th. Payment of $3,480 was issued to the provider on February 3rd. The member responsibility is $870, applied to the individual deductible."),
+      blockG(["Claim status delivered — no further action", "Send EOB to email on file", "Initiate resubmission if needed"]),
+      blockI(),
+    ],
+    escalationRules: [
+      { trigger: "Multiple claims match DOS + billed amount", target: "Claims Specialist", priority: "routine" },
+      { trigger: "Caller disputes adjudication amount", target: "Supervisor", priority: "routine" },
+    ],
+    resolutionOutcomes: ["resolved_on_call"],
+    wrapUpDispositionOptions: ["Resolved", "EOB Sent", "Callback Scheduled"],
+    config,
+  };
+}
+
+// ── Reflect Health: Complex Benefit Inquiry + Warm Transfer ──
+
+export function buildReflectHealthBenefitInquiry(): ScenarioScript {
+  const config: ScenarioConfig = {
+    requires_phi_verification: true,
+    phi_required_count: 3,
+    allow_limited_info_mode: true,
+    warm_transfer_enabled: true,
+    warm_transfer_target: "Clinical Review / Benefits Specialist",
+    recording_disclosure_required: true,
+    call_outcome_sla: "Immediate for benefits; escalation for PA",
+  };
+
+  return {
+    scenarioId: "rh-benefit-inquiry-001",
+    useCaseId: "plain-language",
+    name: "Complex Benefit Inquiry + Warm Transfer (SBC/SPD)",
+    blocks: [
+      blockA(config),
+      blockB(config),
+      blockC("a complex coverage question requiring plan document review"),
+      blockD(
+        ["Member ID", "Service/Procedure", "Provider Name", "In-Network Status"],
+        ["May I have the member ID?", "What specific service or procedure are you inquiring about?", "Which provider will render the service?", "Is this provider in-network?"]
+      ),
+      blockE([
+        { label: "Query SBC/SPD Knowledge Base", type: "lookup" },
+        { label: "Pull Benefits Schedule", type: "lookup" },
+        { label: "Check Accumulator Status", type: "lookup" },
+      ]),
+      blockF("Based on the Summary of Benefits and Coverage, outpatient cardiac rehabilitation is covered as a preventive service when medically necessary. The cost-sharing is a $40 copay per session for in-network providers, subject to the annual deductible. The plan allows up to 36 sessions per calendar year. No Schedule of Benefits applies — this is sourced from the SBC and SPD."),
+      blockG(["Benefits explanation delivered — resolved", "Send written summary to email", "Escalate follow-up question to clinical review"]),
+      blockH("Clinical Review / Benefits Specialist", {
+        summary: "Provider calling about complex benefit inquiry — coverage explained, follow-up PA question requires clinical review",
+        recommendedNextStep: "Review PA status and provide clinical determination update",
+        priority: "routine",
+      }),
+      blockI(),
+    ],
+    escalationRules: [
+      { trigger: "Follow-up question requires PA status / clinical determination", target: "Clinical Review", priority: "routine" },
+      { trigger: "Coverage dispute or plan interpretation disagreement", target: "Benefits Supervisor", priority: "routine" },
+      { trigger: "Low confidence on benefit interpretation", target: "Benefits Specialist", priority: "routine" },
+    ],
+    resolutionOutcomes: ["resolved_on_call", "resolved_warm_transfer"],
+    transferPacketTemplate: {
+      summary: "Benefit inquiry resolved — follow-up PA question escalated",
+      recommendedNextStep: "Provide PA status and clinical determination",
+      priority: "routine",
+    },
+    wrapUpDispositionOptions: ["Resolved", "Warm Transfer Completed", "Summary Sent", "Callback Scheduled"],
+    config,
+  };
+}
+
 // ── Get all seeded scenarios ──
 export function getSeededScenarios(): ScenarioScript[] {
   return [
     buildReflectHealthEligibility(),
     buildReflectHealthPriorAuth(),
     buildReflectHealthEscalation(),
+    buildReflectHealthClaimWithoutNumber(),
+    buildReflectHealthBenefitInquiry(),
     buildPbmFormularyCheck(),
     buildPbmRejectTroubleshoot(),
     buildPbmPaIntake(),
