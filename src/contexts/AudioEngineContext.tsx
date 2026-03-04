@@ -111,7 +111,7 @@ export function AudioEngineProvider({ children }: { children: React.ReactNode })
   const [liveCallIntent, setLiveCallIntent] = useState("");
   const [five9Phase, setFive9Phase] = useState<Five9Phase>("idle");
   const [five9Session, setFive9Session] = useState<Five9SessionData | null>(null);
-  const [isMuted, setIsMuted] = useState(false);
+  const [isMuted, setIsMutedState] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentSpeaker, setCurrentSpeaker] = useState<"caller" | "ai" | null>(null);
@@ -119,6 +119,16 @@ export function AudioEngineProvider({ children }: { children: React.ReactNode })
 
   const currentAudio = useRef<HTMLAudioElement | null>(null);
   const playLock = useRef(false);
+  const isMutedRef = useRef(false);
+
+  // Keep ref in sync and mute/unmute currently playing audio in real-time
+  const setIsMuted = useCallback((v: boolean) => {
+    isMutedRef.current = v;
+    setIsMutedState(v);
+    if (currentAudio.current) {
+      currentAudio.current.muted = v;
+    }
+  }, []);
 
   const stopAudio = useCallback(() => {
     if (currentAudio.current) {
@@ -134,7 +144,7 @@ export function AudioEngineProvider({ children }: { children: React.ReactNode })
 
   const playTTS = useCallback(async (text: string, voiceId: string, volume = 0.4): Promise<void> => {
     // If muted, simulate a short delay instead of playing audio
-    if (isMuted) {
+    if (isMutedRef.current) {
       await new Promise((r) => setTimeout(r, 800));
       return;
     }
@@ -178,6 +188,7 @@ export function AudioEngineProvider({ children }: { children: React.ReactNode })
       const audio = new Audio(audioUrl);
       audio.volume = volume;
       audio.playbackRate = playbackSpeed;
+      audio.muted = isMutedRef.current;
       currentAudio.current = audio;
 
       await new Promise<void>((resolve) => {
@@ -200,7 +211,7 @@ export function AudioEngineProvider({ children }: { children: React.ReactNode })
       setIsPlaying(false);
       setCurrentSpeaker(null);
     }
-  }, [isMuted, playbackSpeed]);
+  }, [playbackSpeed]);
 
   return (
     <AudioEngineContext.Provider value={{
