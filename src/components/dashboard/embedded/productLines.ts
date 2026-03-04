@@ -24,6 +24,9 @@ export const PRODUCT_LINES: ProductLine[] = [
   { id: "employer-tpa", name: "Employer Health Plans / TPA", shortName: "TPA", description: "Third-party administrator operations for employer plans", icon: "🏢" },
   { id: "wc-pbm", name: "Workers' Comp PBM / Pharmacy", shortName: "WC Pharmacy", description: "Clinical prior auth, step therapy, and formulary management", icon: "💊" },
   { id: "specialty-bm", name: "Specialty Benefit Managers", shortName: "Specialty BM", description: "Radiology, Cardiology, PT, Lab benefit management", icon: "🔬" },
+  { id: "pharmacy-benefit", name: "Pharmacy Benefit (PBM)", shortName: "Pharmacy", description: "Formulary management, pharmacy PA, step therapy, specialty Rx", icon: "💊" },
+  { id: "medicare-part-d", name: "Medicare Part D", shortName: "Part D", description: "Medicare prescription drug plan coverage and formulary", icon: "🏛️" },
+  { id: "medicaid-rx", name: "Medicaid Rx", shortName: "Medicaid Rx", description: "State Medicaid pharmacy benefit and preferred drug lists", icon: "🤝" },
 ];
 
 export const DEFAULT_PRODUCT_LINE_ID = "medicare";
