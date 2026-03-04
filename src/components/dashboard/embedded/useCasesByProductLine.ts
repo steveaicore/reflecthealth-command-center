@@ -1,3 +1,4 @@
+import { USE_CASE_PROFILES as MEDICARE_USE_CASES } from "./useCaseProfiles";
 import type { UseCaseProfile, WorkflowStep, ScriptTemplate, GuardrailRule, KPIProjection, RecommendedAction, PolicySnippet } from "./useCaseProfiles";
 
 // Re-export for convenience
@@ -497,9 +498,9 @@ const pbmUseCases: UseCaseProfile[] = [
 
 export const USE_CASES_BY_PRODUCT_LINE: Record<string, UseCaseProfile[] | null> = {
   "commercial": commercialUseCases,
-  "medicare": null, // signals: use original USE_CASE_PROFILES
-  "medicaid": null, // reuse Medicare profiles (same structure)
-  "dual-eligible": null, // reuse Medicare profiles
+  "medicare": MEDICARE_USE_CASES, // Medicare-specific use cases
+  "medicaid": MEDICARE_USE_CASES, // reuse Medicare profiles (same structure)
+  "dual-eligible": MEDICARE_USE_CASES, // reuse Medicare profiles
   "workers-comp": workersCompUseCases,
   "pnc-bi": pncUseCases,
   "disability": disabilityUseCases,
@@ -509,8 +510,8 @@ export const USE_CASES_BY_PRODUCT_LINE: Record<string, UseCaseProfile[] | null> 
   "dental": dentalUseCases,
   "travel": travelUseCases,
   "stop-loss": stopLossUseCases,
-  "group-benefits": null, // reuse Medicare profiles (bundle)
-  "employer-tpa": null, // reuse Medicare profiles (TPA operations)
+  "group-benefits": MEDICARE_USE_CASES, // reuse Medicare profiles (bundle)
+  "employer-tpa": MEDICARE_USE_CASES, // reuse Medicare profiles (TPA operations)
   "wc-pbm": workersCompUseCases, // reuse WC
   "specialty-bm": commercialUseCases, // reuse Commercial
   "pharmacy-benefit": pbmUseCases,
