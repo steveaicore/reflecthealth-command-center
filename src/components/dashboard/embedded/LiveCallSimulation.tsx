@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useSimulation } from "@/contexts/SimulationContext";
 import { useAudioEngine } from "@/contexts/AudioEngineContext";
 import { useDashboard } from "@/contexts/DashboardContext";
@@ -6,10 +6,19 @@ import type { Five9Phase, Five9ApiCall, Five9SessionData, EdgeCaseType } from "@
 import { User, AlertTriangle, CheckCircle2, Mic, MicOff, Timer } from "lucide-react";
 import { AudioControlPanel } from "./AudioControlPanel";
 import penguinLogo from "@/assets/penguin-logo.png";
+import { USE_CASE_PROFILES } from "./useCaseProfiles";
+import type { UseCaseProfile } from "./useCaseProfiles";
+import { getUseCasesForProductLine } from "./useCasesByProductLine";
 
-const CALLER_VOICE = "EXAVITQu4vr4xnSDxMaL";
+// Female Indian voice for caller (Priya – warm, professional)
+const CALLER_VOICE = "pFZP5JQG7iQjIQuC4Bku";
 // Filipino-accented voice for BPO call rep realism
 const AI_VOICE = "P1hTNpVDMG973fukK9V2";
+
+interface LiveCallSimulationProps {
+  selectedUseCaseId: string;
+  selectedProductLineId: string;
+}
 
 // ── Random data generators ──
 const PROVIDER_NAMES = ["Northgate Orthopedic", "Lakeside Medical Group", "Summit Health Partners", "Valley Cardiology Associates", "Coastal Family Medicine", "Heritage Internal Medicine"];
@@ -446,6 +455,62 @@ function pickTemplate(npi: string, provName: string, memberId: string, dob: stri
   }
 }
 
+// ── Dynamic template builder from use case profile ──
+function buildDynamicProviderTemplate(uc: UseCaseProfile, npi: string, provName: string, memberId: string, dob: string): CallTemplate {
+  const s = uc.scriptTemplate;
+  return {
+    intent: uc.name,
+    callerType: "Provider",
+    confidenceRange: [90, 96],
+    script: [
+      { speaker: "caller", text: `This is ${provName} calling regarding ${uc.name.toLowerCase()}.`, phase: "awaiting" },
+      { speaker: "ai", text: "Thank you for calling. May I have your NPI number please?" },
+      { speaker: "caller", text: `NPI ${npi}.`, phase: "provider-verifying" },
+      { speaker: "ai", text: `Provider verified. ${provName}, NPI ${npi}. ${s.probingQuestions[0] || "How can I assist you?"}`, phase: "provider-verified" },
+      { speaker: "caller", text: `Member ID ${memberId}, date of birth ${dob}.`, phase: "member-verifying" },
+      { speaker: "ai", text: `Member verified. ${s.probingQuestions[1] || "Let me look that up for you."}`, phase: "member-verified" },
+      { speaker: "caller", text: `Yes, ${s.probingQuestions[2] ? "it's for " + s.probingQuestions[2].toLowerCase().replace("?", "") : "that's correct"}.`, phase: "intent-classifying" },
+      { speaker: "ai", text: s.compliancePhrasing[0]?.compliant || `I've processed your ${uc.shortName} request. All details have been confirmed.`, phase: "response-ready" },
+      { speaker: "ai", text: "Is there anything else I can help with today?" },
+      { speaker: "caller", text: "No, that's all. Thank you." },
+      { speaker: "ai", text: "Thank you for calling. This has been completed and logged.", phase: "resolved" },
+    ],
+  };
+}
+
+function buildDynamicMemberTemplate(uc: UseCaseProfile, memberId: string): CallTemplate {
+  const s = uc.scriptTemplate;
+  return {
+    intent: uc.name,
+    callerType: "Member",
+    confidenceRange: [90, 96],
+    script: [
+      { speaker: "caller", text: s.probingQuestions[0]?.replace("?", ".") || `I'd like help with ${uc.name.toLowerCase()}.`, phase: "awaiting" },
+      { speaker: "ai", text: s.opening || "I'd be happy to help. Please provide your member ID." },
+      { speaker: "caller", text: `It's ${memberId}.`, phase: "member-verifying" },
+      { speaker: "ai", text: `Member verified. ${s.compliancePhrasing[0]?.compliant || `Your ${uc.shortName} request has been processed.`}`, phase: "response-ready" },
+    ],
+  };
+}
+
+function pickDynamicTemplate(uc: UseCaseProfile, npi: string, provName: string, memberId: string, dob: string, edgeCase: EdgeCaseType): CallTemplate {
+  if (edgeCase !== "none") {
+    const retrySucceeds = Math.random() < 0.6;
+    switch (edgeCase) {
+      case "wrong_npi": return buildWrongNpiScript(npi, provName, memberId, dob, retrySucceeds);
+      case "invalid_member_id": return buildInvalidMemberScript(npi, provName, memberId, retrySucceeds);
+      case "dob_mismatch": return buildDobMismatchScript(npi, provName, memberId, dob, retrySucceeds);
+      case "claim_not_found": return buildClaimNotFoundScript(npi, provName, memberId);
+      case "api_timeout": return buildApiTimeoutScript(npi, provName, memberId, dob, retrySucceeds);
+    }
+  }
+  // 75% provider, 25% member
+  if (Math.random() < 0.75) {
+    return buildDynamicProviderTemplate(uc, npi, provName, memberId, dob);
+  }
+  return buildDynamicMemberTemplate(uc, memberId);
+}
+
 type CallStatus = "idle" | "incoming" | "processing" | "resolved" | "escalated";
 
 interface TranscriptLine {
@@ -455,7 +520,7 @@ interface TranscriptLine {
   typing?: boolean;
 }
 
-export function LiveCallSimulation() {
+export function LiveCallSimulation({ selectedUseCaseId, selectedProductLineId }: LiveCallSimulationProps) {
   const { pipeline } = useSimulation();
   const { results } = useDashboard();
   const {
@@ -463,6 +528,12 @@ export function LiveCallSimulation() {
     confidenceThreshold, playTTS, stopAudio, setCurrentCallOutcome,
     isPlaying, setLiveCallIntent, setFive9Phase, setFive9Session,
   } = useAudioEngine();
+
+  // Resolve active use case profile from the product line + use case ID
+  const activeUseCase = useMemo(() => {
+    const cases = getUseCasesForProductLine(selectedProductLineId, USE_CASE_PROFILES);
+    return cases.find(c => c.id === selectedUseCaseId) || cases[0] || USE_CASE_PROFILES[0];
+  }, [selectedUseCaseId, selectedProductLineId]);
 
   const [transcript, setTranscript] = useState<TranscriptLine[]>([]);
   const [callStatus, setCallStatus] = useState<CallStatus>("idle");
@@ -486,7 +557,7 @@ export function LiveCallSimulation() {
     const dob = randomDob();
     const edgeCase = selectEdgeCase();
 
-    const template = pickTemplate(npi, provName, memberId, dob, edgeCase);
+    const template = pickDynamicTemplate(activeUseCase, npi, provName, memberId, dob, edgeCase);
     callIndexRef.current++;
 
     const [lo, hi] = template.confidenceRange;
@@ -629,7 +700,7 @@ export function LiveCallSimulation() {
     setFive9Phase(deflected ? "resolved" : "escalation");
 
     isRunningRef.current = false;
-  }, [confidenceThreshold, playTTS, setCurrentCallOutcome, setFive9Phase, setFive9Session, setLiveCallIntent]);
+  }, [activeUseCase, confidenceThreshold, playTTS, setCurrentCallOutcome, setFive9Phase, setFive9Session, setLiveCallIntent]);
 
   // Auto-advance
   useEffect(() => {
