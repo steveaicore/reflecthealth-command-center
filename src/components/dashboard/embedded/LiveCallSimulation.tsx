@@ -253,6 +253,52 @@ function buildApiTimeoutScript(npi: string, provName: string, memberId: string, 
   };
 }
 
+// ── Scenario 2: Claim Status Without Claim Number (DOS + Billed Charges) ──
+function buildClaimWithoutNumberScript(npi: string, provName: string, memberId: string, dob: string): CallTemplate {
+  const dos = "January 15th, 2026";
+  const billedAmt = "$4,350";
+  const claimFound = randomClaimId();
+  return {
+    intent: "Claim Status (No Claim Number)",
+    callerType: "Provider",
+    confidenceRange: [88, 94],
+    script: [
+      { speaker: "caller", text: `This is ${provName} calling to check on a claim status.`, phase: "awaiting" },
+      { speaker: "ai", text: "Thank you. May I have your NPI number?" },
+      { speaker: "caller", text: `NPI ${npi}.`, phase: "provider-verifying" },
+      { speaker: "ai", text: `Provider verified. ${provName}, NPI ${npi}. Do you have the claim number?`, phase: "provider-verified" },
+      { speaker: "caller", text: `I don't have the claim number. The member is ${memberId}, date of birth ${dob}.`, phase: "member-verifying" },
+      { speaker: "ai", text: `Member verified. I can search by date of service and billed charges. What was the date of service?`, phase: "member-verified" },
+      { speaker: "caller", text: `Date of service was ${dos}. Total billed was ${billedAmt}.`, phase: "intent-classifying" },
+      { speaker: "ai", text: `I found claim ${claimFound} for date of service ${dos}, billed amount ${billedAmt}. The claim was adjudicated on January 28th. Payment of $3,480 was issued to the provider on February 3rd. The member responsibility is $870, applied to the deductible.`, phase: "response-ready" },
+      { speaker: "ai", text: "Is there anything else I can help with today?" },
+      { speaker: "caller", text: "No, that covers it. Thank you." },
+      { speaker: "ai", text: "Thank you for calling. This inquiry has been completed and logged.", phase: "resolved" },
+    ],
+  };
+}
+
+// ── Scenario 3: Complex Benefit Inquiry + Warm Transfer ──
+function buildBenefitInquiryWarmTransferScript(npi: string, provName: string, memberId: string, dob: string): CallTemplate {
+  return {
+    intent: "Benefit Inquiry (SBC/SPD)",
+    callerType: "Provider",
+    confidenceRange: [78, 86],
+    script: [
+      { speaker: "caller", text: `This is ${provName}. I need to verify coverage for a complex procedure.`, phase: "awaiting" },
+      { speaker: "ai", text: "I'd be happy to help. May I have your NPI?" },
+      { speaker: "caller", text: `NPI ${npi}.`, phase: "provider-verifying" },
+      { speaker: "ai", text: `Provider verified. Please provide the member ID and date of birth.`, phase: "provider-verified" },
+      { speaker: "caller", text: `Member ${memberId}, date of birth ${dob}.`, phase: "member-verifying" },
+      { speaker: "ai", text: `Member verified. What specific coverage question do you have?`, phase: "member-verified" },
+      { speaker: "caller", text: "I need to know if outpatient cardiac rehabilitation is covered, and what the cost-sharing looks like.", phase: "intent-classifying" },
+      { speaker: "ai", text: `Based on the Summary of Benefits and Coverage, outpatient cardiac rehabilitation is covered as a preventive service when medically necessary. The member's cost-sharing is a $40 copay per session for in-network, subject to the annual deductible. The plan allows up to 36 sessions per calendar year.`, phase: "response-ready" },
+      { speaker: "caller", text: "And can you also check the status of a prior authorization we submitted last week?" },
+      { speaker: "ai", text: "Prior authorization status requires a clinical determination review. Let me connect you with our clinical review team. I'll transfer all the information from this call so you won't need to repeat anything.", phase: "escalation" },
+    ],
+  };
+}
+
 function buildMemberTemplates(memberId: string): CallTemplate[] {
   return [
     {
@@ -307,6 +353,17 @@ function generateApiCalls(intent: string, memberId: string, edgeCase: EdgeCaseTy
       return [
         { endpoint: `GET /claim-status?claim_id=${randomClaimId()}`, source: "Core Claims System", latency: randomLatency(150, 300), status: 200 },
         { endpoint: `GET /eligibility?member_id=${memberId}`, source: "Azure Data Lake", latency: randomLatency(200, 350), status: 200 },
+      ];
+    case "Claim Status (No Claim Number)":
+      return [
+        { endpoint: `GET /claim-search?member_id=${memberId}&dos=2026-01-15&billed=4350`, source: "Core Claims System", latency: randomLatency(300, 500), status: 200 },
+        { endpoint: `GET /eligibility?member_id=${memberId}`, source: "Azure Data Lake", latency: randomLatency(200, 350), status: 200 },
+      ];
+    case "Benefit Inquiry (SBC/SPD)":
+      return [
+        { endpoint: `GET /eligibility?member_id=${memberId}`, source: "Azure Data Lake", latency: randomLatency(200, 350), status: 200 },
+        { endpoint: `GET /benefits-schedule?member_id=${memberId}`, source: "Core Claims System", latency: randomLatency(120, 200), status: 200 },
+        { endpoint: `GET /sbc-lookup?plan_id=PPO-GOLD`, source: "SBC/SPD Knowledge Base", latency: randomLatency(150, 280), status: 200 },
       ];
     case "Eligibility Verification":
       return [
@@ -420,6 +477,31 @@ function generateStructuredResponse(intent: string, memberId: string, edgeCase: 
         generatedResponse: `Individual deductible: $${met} of $${total} met. Out-of-pocket maximum remaining: $${oopRemain.toLocaleString()}.`,
       };
     }
+    case "Claim Status (No Claim Number)": {
+      const foundClaim = randomClaimId();
+      return {
+        fields: [
+          { label: "Claim", value: `#${foundClaim}` },
+          { label: "Search Method", value: "DOS + Billed Charges" },
+          { label: "Status", value: "Adjudicated — Paid" },
+          { label: "Payment", value: "$3,480" },
+          { label: "Member Resp.", value: "$870 (Deductible)" },
+        ],
+        generatedResponse: `Claim ${foundClaim} located via DOS and billed charges. Adjudicated and paid $3,480 to provider. Member responsibility: $870 applied to deductible.`,
+      };
+    }
+    case "Benefit Inquiry (SBC/SPD)":
+      return {
+        fields: [
+          { label: "Plan", value: plan },
+          { label: "Service", value: "Outpatient Cardiac Rehab" },
+          { label: "Coverage", value: "Covered (Preventive)" },
+          { label: "Copay", value: "$40/session (In-Network)" },
+          { label: "Session Limit", value: "36/calendar year" },
+          { label: "Source", value: "SBC — Plan Document" },
+        ],
+        generatedResponse: `Outpatient cardiac rehabilitation is covered as a preventive service. Cost-sharing: $40 copay per session in-network, subject to deductible. Up to 36 sessions per calendar year. Source: Summary of Benefits and Coverage.`,
+      };
     default:
       return {
         fields: [{ label: "Status", value: "Processed" }],
@@ -504,6 +586,17 @@ function pickDynamicTemplate(uc: UseCaseProfile, npi: string, provName: string, 
       case "api_timeout": return buildApiTimeoutScript(npi, provName, memberId, dob, retrySucceeds);
     }
   }
+
+  // For claims-status use case, occasionally pick the "no claim number" variant (Scenario 2)
+  if (uc.id === "claims-status" && Math.random() < 0.3) {
+    return buildClaimWithoutNumberScript(npi, provName, memberId, dob);
+  }
+
+  // For plain-language or eligibility use cases, occasionally pick the benefit inquiry + warm transfer (Scenario 3)
+  if ((uc.id === "plain-language" || uc.id === "eligibility-coverage") && Math.random() < 0.25) {
+    return buildBenefitInquiryWarmTransferScript(npi, provName, memberId, dob);
+  }
+
   // 75% provider, 25% member
   if (Math.random() < 0.75) {
     return buildDynamicProviderTemplate(uc, npi, provName, memberId, dob);
