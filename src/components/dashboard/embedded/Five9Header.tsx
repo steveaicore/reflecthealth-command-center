@@ -7,6 +7,7 @@ import { ProductLineSelector } from "./ProductLineSelector";
 import { logAuditEvent, AUDIT_EVENTS } from "./auditLogger";
 import penguinLogo from "@/assets/penguin-icon.png";
 import type { Five9Tab } from "./Five9Layout";
+import { OrganizationTypeSelector } from "./OrganizationTypeSelector";
 
 interface Five9HeaderProps {
   activeTab: Five9Tab;
@@ -15,9 +16,11 @@ interface Five9HeaderProps {
   setSelectedUseCaseId: (id: string) => void;
   selectedProductLineId: string;
   setSelectedProductLineId: (id: string) => void;
+  selectedOrgTypeId: string;
+  setSelectedOrgTypeId: (id: string) => void;
 }
 
-export function Five9Header({ activeTab, setActiveTab, selectedUseCaseId, setSelectedUseCaseId, selectedProductLineId, setSelectedProductLineId }: Five9HeaderProps) {
+export function Five9Header({ activeTab, setActiveTab, selectedUseCaseId, setSelectedUseCaseId, selectedProductLineId, setSelectedProductLineId, selectedOrgTypeId, setSelectedOrgTypeId }: Five9HeaderProps) {
   const { setDeploymentMode } = useDashboard();
   
   const [elapsed, setElapsed] = useState(0);
@@ -70,10 +73,16 @@ export function Five9Header({ activeTab, setActiveTab, selectedUseCaseId, setSel
       </div>
 
       <div className="flex items-center gap-3">
+        {/* Organization Type Selector */}
+        <div className="relative flex items-center gap-1.5">
+          <span className="text-[9px] text-white/40 uppercase tracking-wider hidden xl:inline">Org</span>
+          <OrganizationTypeSelector selectedId={selectedOrgTypeId} onSelect={setSelectedOrgTypeId} />
+        </div>
+        <div className="h-4 w-px bg-white/20" />
         {/* Product Line Selector */}
         <div className="relative flex items-center gap-1.5">
           <span className="text-[9px] text-white/40 uppercase tracking-wider hidden xl:inline">Product</span>
-          <ProductLineSelector selectedId={selectedProductLineId} onSelect={setSelectedProductLineId} />
+          <ProductLineSelector selectedId={selectedProductLineId} onSelect={setSelectedProductLineId} orgTypeId={selectedOrgTypeId} />
         </div>
         <div className="h-4 w-px bg-white/20" />
         {/* Use Case Selector */}

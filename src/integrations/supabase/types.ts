@@ -17,6 +17,7 @@ export type Database = {
       agent_preferences: {
         Row: {
           agent_user_id: string
+          default_org_type_id: string
           default_product_line_id: string
           default_use_case_id: string
           id: string
@@ -24,6 +25,7 @@ export type Database = {
         }
         Insert: {
           agent_user_id: string
+          default_org_type_id?: string
           default_product_line_id?: string
           default_use_case_id?: string
           id?: string
@@ -31,6 +33,7 @@ export type Database = {
         }
         Update: {
           agent_user_id?: string
+          default_org_type_id?: string
           default_product_line_id?: string
           default_use_case_id?: string
           id?: string

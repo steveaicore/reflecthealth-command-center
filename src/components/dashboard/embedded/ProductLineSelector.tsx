@@ -1,14 +1,20 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PRODUCT_LINES } from "./productLines";
+import { getProductLinesForOrgType } from "./orgTypeProfiles";
 import { toast } from "@/hooks/use-toast";
 import { logAuditEvent } from "./auditLogger";
 
 interface ProductLineSelectorProps {
   selectedId: string;
   onSelect: (id: string) => void;
+  orgTypeId?: string;
 }
 
-export function ProductLineSelector({ selectedId, onSelect }: ProductLineSelectorProps) {
+export function ProductLineSelector({ selectedId, onSelect, orgTypeId }: ProductLineSelectorProps) {
+  const allIds = PRODUCT_LINES.map(p => p.id);
+  const allowedIds = orgTypeId ? getProductLinesForOrgType(orgTypeId, allIds) : allIds;
+  const filteredLines = PRODUCT_LINES.filter(p => allowedIds.includes(p.id));
+
   const handleChange = (newId: string) => {
     if (newId !== selectedId) {
       logAuditEvent("PRODUCT_LINE_CHANGED", "", undefined, { previousProductLineId: selectedId, newProductLineId: newId });
@@ -30,7 +36,7 @@ export function ProductLineSelector({ selectedId, onSelect }: ProductLineSelecto
         <div className="px-2 py-1.5 text-[9px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
           Insurance Product Line
         </div>
-        {PRODUCT_LINES.map((pl) => (
+        {filteredLines.map((pl) => (
           <SelectItem key={pl.id} value={pl.id} className="text-[11px] py-1.5">
             <div className="flex items-center gap-2">
               <span className="text-[12px]">{pl.icon}</span>
