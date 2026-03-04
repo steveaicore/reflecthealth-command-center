@@ -63,7 +63,7 @@ const DEFAULT_PLATFORM: PlatformParams = {
 
 export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const [mode, setMode] = useState<ViewMode>("internal");
-  const [deploymentMode, setDeploymentMode] = useState<DeploymentMode>("white-label");
+  const [deploymentMode, setDeploymentMode] = useState<DeploymentMode>("embedded");
   const [preset, setPresetRaw] = useState<VolumePreset>("medium");
   const [callParams, setCallParams] = useState(DEFAULT_CALL);
   const [claimsParams, setClaimsParams] = useState(DEFAULT_CLAIMS);
