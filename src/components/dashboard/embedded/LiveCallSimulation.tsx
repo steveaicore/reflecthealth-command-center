@@ -11,8 +11,8 @@ import type { UseCaseProfile } from "./useCaseProfiles";
 import { getUseCasesForProductLine } from "./useCasesByProductLine";
 import { getEndingsForUseCase, selectEnding, type ResolutionEnding } from "./resolutionVarietyEngine";
 
-// Female Indian voice for caller (Priya – warm, professional)
-const CALLER_VOICE = "pFZP5JQG7iQjIQuC4Bku";
+// Female Indian voice for caller (Janvi – expressive Indian voice)
+const CALLER_VOICE = "JNaMjd7t4u3EhgkVknn3";
 // Filipino-accented voice for BPO call rep realism
 const AI_VOICE = "P1hTNpVDMG973fukK9V2";
 
