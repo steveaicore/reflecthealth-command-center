@@ -91,6 +91,82 @@
     --opyn-card: 0 0% 100%;
     --opyn-muted: 220 10% 55%;
   }
+
+  .dark {
+    --background: 222 20% 8%;
+    --foreground: 220 15% 90%;
+
+    --card: 222 18% 12%;
+    --card-foreground: 220 15% 90%;
+
+    --popover: 222 18% 12%;
+    --popover-foreground: 220 15% 90%;
+
+    --primary: 335 100% 62%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 14% 16%;
+    --secondary-foreground: 220 15% 75%;
+
+    --muted: 220 14% 16%;
+    --muted-foreground: 220 10% 55%;
+
+    --accent: 20 90% 55%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 15% 20%;
+    --input: 220 15% 20%;
+    --ring: 335 100% 62%;
+
+    --sidebar-background: 222 18% 10%;
+    --sidebar-foreground: 220 15% 90%;
+    --sidebar-primary: 335 100% 62%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 14% 16%;
+    --sidebar-accent-foreground: 220 15% 75%;
+    --sidebar-border: 220 15% 18%;
+    --sidebar-ring: 335 100% 62%;
+
+    --metric-positive: 335 100% 62%;
+    --metric-negative: 0 72% 55%;
+    --metric-neutral: 45 90% 55%;
+    --surface-elevated: 222 16% 14%;
+    --glow-primary: 335 100% 62%;
+    --section-bg: 222 18% 10%;
+
+    --semantic-identity: 253 70% 72%;
+    --semantic-coverage: 152 40% 52%;
+    --semantic-claims: 216 90% 65%;
+    --semantic-financial: 335 100% 62%;
+
+    --tint-savings: 335 30% 14%;
+    --tint-fte: 265 20% 14%;
+    --tint-calls: 25 30% 14%;
+
+    --reflect-pink: 335 100% 62%;
+    --reflect-orange: 20 90% 55%;
+
+    --status-ai: 335 100% 62%;
+    --status-human: 220 14% 55%;
+    --status-escalation: 38 92% 55%;
+    --status-resolved: 160 60% 48%;
+
+    --five9-navy: 220 60% 15%;
+    --five9-dark: 220 50% 10%;
+    --five9-accent: 210 100% 55%;
+    --five9-muted: 220 15% 50%;
+
+    --opyn-green: 158 64% 48%;
+    --opyn-green-light: 158 30% 15%;
+    --opyn-purple: 265 60% 58%;
+    --opyn-purple-light: 265 30% 15%;
+    --opyn-bg: 222 20% 8%;
+    --opyn-card: 222 18% 12%;
+    --opyn-muted: 220 10% 50%;
+  }
 }
 
 @layer base {
